@@ -126,6 +126,7 @@ int main(int argc, char *argv[])
 	if (st)
 	{
 		printf("OpenGLWindow konnte nicht erstellt werden!\n");
+		return err;
 	}
 	printf("OpenGLWindow erstellt!\n");
 	

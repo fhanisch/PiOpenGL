@@ -9,14 +9,22 @@
  */
  
 #include <stdio.h>
+#include <libusb-1.0/libusb.h>
 #include <bcm_host.h>
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
-#include <SDL2/SDL.h>
 
 #define WINDOW_NAME "PiOpenGL"
+#define TRUE 1
+#define FALSE 0
+// Logitech - USB Receiver
+#define VENDOR_ID 0x046d
+#define PRODUCT_ID 0xc517
+#define KEYBOARD_INTERFACE 0
+#define ENDPOINT_ADDRESS 0x81
 
 typedef enum {ok, err} status;
+typedef char bool;
 
 typedef struct
 {
@@ -36,7 +44,7 @@ typedef struct
 
 status createOpenGLContext(CUBE_STATE_T *p_state)
 {
-	int32_t st;
+	int32_t ret;
 	EGLBoolean result;
 	EGLint num_config;
 	EGLConfig config;
@@ -71,8 +79,8 @@ status createOpenGLContext(CUBE_STATE_T *p_state)
 	result = eglChooseConfig(p_state->display, attribute_list, &config, 1, &num_config);		
 	result = eglBindAPI(EGL_OPENGL_ES_API);	
 	p_state->context = eglCreateContext(p_state->display, config, EGL_NO_CONTEXT,context_attributes);	
-	st = graphics_get_display_size(0, &p_state->screen_width,&p_state->screen_height);
-	if (st) return err;
+	ret = graphics_get_display_size(0, &p_state->screen_width,&p_state->screen_height);
+	if (ret) return err;
 	p_state->screen_width = 1920;
 	p_state->screen_height = 1080;
 	dst_rect.x = 0;
@@ -97,52 +105,91 @@ status createOpenGLContext(CUBE_STATE_T *p_state)
 	return ok;
 }
 
-status createOpenGLWindow(char *windowName,SDL_Window *window)
-{
-	window = SDL_CreateWindow(windowName,50,50,400,400,SDL_WINDOW_OPENGL);
-	if (window==NULL) return err;
+status init_keyboard(libusb_device_handle **usb_dev)
+{	
+	status ret;
+	
+	ret = libusb_init(NULL);
+	if (ret)
+	{
+		printf("USB konnte nicht initialisiert werden!\n");
+		return err;
+	}
+	printf("USB initialisiert!\n");
+	
+	*usb_dev = libusb_open_device_with_vid_pid(NULL,VENDOR_ID,PRODUCT_ID);
+	if (!*usb_dev)	
+	{
+		printf("USB Device wurde nicht gefunden!\n");
+		return err;
+	}
+	printf("USB Device erkannt!\n");
+	
+	libusb_detach_kernel_driver(*usb_dev,KEYBOARD_INTERFACE);
+	
+	ret = libusb_claim_interface(*usb_dev,KEYBOARD_INTERFACE);
+	if (ret < 0)
+	{
+		printf("Claim fehlgeschlagen: %d!\n", ret);
+		return 3;
+	}
+	printf("Interfaces claimed!\n");
+	
 	return ok;
 }
- 
+
+void close_keyboard(libusb_device_handle **usb_dev)
+{
+	libusb_release_interface(*usb_dev, KEYBOARD_INTERFACE);
+	libusb_attach_kernel_driver(*usb_dev,KEYBOARD_INTERFACE);
+	libusb_close(*usb_dev);
+	libusb_exit(NULL);
+}
+
 int main(int argc, char *argv[])
 {
-	CUBE_STATE_T state;
-	//SDL_Window *window=NULL;
-	//SDL_GLContext glcontext;
-	status st;
+	status ret;
+	bool quit=FALSE;
+	CUBE_STATE_T state;	
+	libusb_device_handle *usb_dev = NULL;
+	unsigned char rcvbuf[8];
+	int transferred;	
 	
-	printf("PiOPenGL\n");
-	printf("========\n\n");
+	printf("*** PiOpenGL ***\n");
+	printf("================\n\n");
+			
+	ret = init_keyboard(&usb_dev);
+	if (ret) return err;
 	
-	st=createOpenGLContext(&state);
-	if (st)
+	ret=createOpenGLContext(&state);
+	if (ret)
 	{
 		printf("OpenGLContext konnte nicht erstellt werden!\n");
 		return err;
 	}
 	printf("OpenGLContext erstellt!\n");
-	/*
-	st=createOpenGLWindow(WINDOW_NAME,window); // SDL Window nicht notwendig --> OpenGLContext funktioniert auch so, da oben bereits erstellt. Nur für Events nötig.
-	if (st)
-	{
-		printf("OpenGLWindow konnte nicht erstellt werden!\n");
-		return err;
-	}
-	printf("OpenGLWindow erstellt!\n");
 	
-	glcontext = SDL_GL_CreateContext(window);
-	SDL_GL_MakeCurrent(window,glcontext);
-	*/
 	glClearColor(1.0f,0.0f,1.0f,1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
 	
-	//SDL_GL_SwapWindow(window);
-	eglSwapBuffers(state.display, state.surface); //für Fullscreen	
+	while(!quit)
+	{
+		glClear(GL_COLOR_BUFFER_BIT);
+		
+		eglSwapBuffers(state.display, state.surface);
+		
+		ret = libusb_bulk_transfer(usb_dev,ENDPOINT_ADDRESS,rcvbuf,5,&transferred,0);
+		if (ret==0)
+		{			
+			if (rcvbuf[2]==0x29) quit=1;
+		}
+		else 
+		{
+			printf("Transfer Error: %d\n",ret);
+			quit=FALSE;
+		}
+	}
+				
 	
-	//SDL_GL_DeleteContext(glcontext);
-	//SDL_DestroyWindow(window);
-	SDL_Delay(5000);
-	//SDL_Quit();
-	
+	close_keyboard(&usb_dev);
 	return 0;
 }

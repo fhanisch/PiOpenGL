@@ -180,6 +180,10 @@ int main(int argc, char *argv[])
 		ret = libusb_bulk_transfer(usb_dev,ENDPOINT_ADDRESS,rcvbuf,5,&transferred,0);
 		if (ret==0)
 		{			
+			if (rcvbuf[2]==0x4f) glClearColor(1.0f,0.0f,1.0f,1.0f);
+			if (rcvbuf[2]==0x50) glClearColor(1.0f,0.0f,0.0f,1.0f);
+			if (rcvbuf[2]==0x51) glClearColor(0.0f,1.0f,0.0f,1.0f);
+			if (rcvbuf[2]==0x52) glClearColor(0.0f,0.0f,1.0f,1.0f);
 			if (rcvbuf[2]==0x29) quit=TRUE;
 		}
 		else 

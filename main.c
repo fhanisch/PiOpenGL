@@ -133,7 +133,7 @@ status init_keyboard(libusb_device_handle **usb_dev)
 		printf("Claim fehlgeschlagen: %d!\n", ret);
 		return 3;
 	}
-	printf("Interfaces claimed!\n");
+	printf("USB interfaces claimed!\n");
 	
 	return ok;
 }
@@ -180,16 +180,15 @@ int main(int argc, char *argv[])
 		ret = libusb_bulk_transfer(usb_dev,ENDPOINT_ADDRESS,rcvbuf,5,&transferred,0);
 		if (ret==0)
 		{			
-			if (rcvbuf[2]==0x29) quit=1;
+			if (rcvbuf[2]==0x29) quit=TRUE;
 		}
 		else 
 		{
 			printf("Transfer Error: %d\n",ret);
-			quit=FALSE;
+			quit=TRUE;
 		}
 	}
-				
-	
+					
 	close_keyboard(&usb_dev);
 	return 0;
 }

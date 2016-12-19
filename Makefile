@@ -4,8 +4,8 @@ EXEC = PiOpenGL
 
 all: $(EXEC)
 
-$(EXEC): main.c
-	gcc -Wall -o $@ main.c $(INC) $(LIB)
+$(EXEC): main.c renderer.c shader.c renderobject.c
+	gcc -Wall -o $@ $+ $(INC) $(LIB)
 	
 clean:
 	rm $(EXEC)

@@ -12,19 +12,14 @@
 #include <libusb-1.0/libusb.h>
 #include <bcm_host.h>
 #include <EGL/egl.h>
-#include <GLES2/gl2.h>
+//#include <GL/glew.h>
+#include "PiOpenGL.h"
+#include "renderer.h"
 
-#define WINDOW_NAME "PiOpenGL"
-#define TRUE 1
-#define FALSE 0
 // Logitech - USB Receiver
 #define VENDOR_ID 0x046d
 #define PRODUCT_ID 0xc517
 #define KEYBOARD_INTERFACE 0
-#define ENDPOINT_ADDRESS 0x81
-
-typedef enum {ok, err} status;
-typedef char bool;
 
 typedef struct
 {
@@ -32,15 +27,6 @@ typedef struct
 	int width;
 	int height;
 } EGL_DISPMANX_WINDOW_T;
-
-typedef struct
-{
-	uint32_t screen_width;
-	uint32_t screen_height;
-	EGLDisplay display;
-	EGLSurface surface;
-	EGLContext context;
-} CUBE_STATE_T;
 
 status createOpenGLContext(CUBE_STATE_T *p_state)
 {
@@ -148,12 +134,9 @@ void close_keyboard(libusb_device_handle **usb_dev)
 
 int main(int argc, char *argv[])
 {
-	status ret;
-	bool quit=FALSE;
+	status ret;	
 	CUBE_STATE_T state;	
 	libusb_device_handle *usb_dev = NULL;
-	unsigned char rcvbuf[8];
-	int transferred;	
 	
 	printf("*** PiOpenGL ***\n");
 	printf("================\n\n");
@@ -168,31 +151,20 @@ int main(int argc, char *argv[])
 		return err;
 	}
 	printf("OpenGLContext erstellt!\n");
-	
-	glClearColor(1.0f,0.0f,1.0f,1.0f);
-	
-	while(!quit)
+	/*
+	ret = glewInit();
+	if (ret)
 	{
-		glClear(GL_COLOR_BUFFER_BIT);
-		
-		eglSwapBuffers(state.display, state.surface);
-		
-		ret = libusb_bulk_transfer(usb_dev,ENDPOINT_ADDRESS,rcvbuf,5,&transferred,0);
-		if (ret==0)
-		{			
-			if (rcvbuf[2]==0x4f) glClearColor(1.0f,0.0f,1.0f,1.0f);
-			if (rcvbuf[2]==0x50) glClearColor(1.0f,0.0f,0.0f,1.0f);
-			if (rcvbuf[2]==0x51) glClearColor(0.0f,1.0f,0.0f,1.0f);
-			if (rcvbuf[2]==0x52) glClearColor(0.0f,0.0f,1.0f,1.0f);
-			if (rcvbuf[2]==0x29) quit=TRUE;
-		}
-		else 
-		{
-			printf("Transfer Error: %d\n",ret);
-			quit=TRUE;
-		}
+		printf("GLEW konnte nicht initialisiert werden!\n");
+		return err;
 	}
-					
+	printf("GLEW initialisiert!\n");
+	*/
+	
+	initOpenGL(&state, usb_dev);
+	initRenderScene();
+	renderLoop();
+						
 	close_keyboard(&usb_dev);
 	return 0;
 }

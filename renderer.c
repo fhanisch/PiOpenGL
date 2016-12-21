@@ -5,6 +5,7 @@
 #include <GLES2/gl2.h>
 #include "PiOpenGL.h"
 #include "shader.h"
+#include "matrix.h"
 #include "renderobject.h"
 
 #define VS_SHADERNAME "generic.vs"
@@ -55,9 +56,7 @@ void initRenderScene()
 	free(vsStr);
 	free(fsStr);
 	
-	initObject(&triangle);
-	triangle.shaderProgram = generic_sp;
-	triangle.vertexHandle = glGetAttribLocation(triangle.shaderProgram,"vertex");
+	initObject(&triangle, generic_sp);	
 	printf("vboID: %d\n",triangle.vboID);
 	printf("iboID: %d\n",triangle.iboID);
 }
@@ -72,11 +71,8 @@ void renderLoop()
 	while(!quit)
 	{
 		glClear(GL_COLOR_BUFFER_BIT);
-		glUseProgram(triangle.shaderProgram);
-		glEnableVertexAttribArray(triangle.vertexHandle);
-		glBindBuffer(GL_ARRAY_BUFFER, triangle.vboID);
-		glVertexAttribPointer(triangle.vertexHandle, 3, GL_FLOAT, GL_FALSE, 0, 0);
-		glDrawElements(GL_TRIANGLES, triangle.indicesLen, GL_UNSIGNED_SHORT, 0);
+		
+		drawObject(&triangle);
 		
 		eglSwapBuffers(state->display, state->surface);
 		

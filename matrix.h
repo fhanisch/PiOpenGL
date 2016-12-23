@@ -20,6 +20,9 @@ typedef struct
 
 } Matrix4;
 
+float *vecnf(float start, float step, uint count);
+uint *vecni(uint start, uint count);
+ushort *vecns(uint start, uint count);
 Vector3 vec3(float x, float y, float z);
 Vector4 getColor(float r, float g, float b, float a);
 Matrix4 identity();

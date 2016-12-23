@@ -10,11 +10,12 @@
 #include "renderobject.h"
 
 #define VS_SHADERNAME "generic.vs"
+#define VS_CIRCLE "circle.vs"
 #define FS_SHADERNAME "generic.fs"
 
 static CUBE_STATE_T *state = NULL;
 static libusb_device_handle *usb_dev = NULL;
-static Object triangle, rect, cross;
+static Object triangle, rect, cross, circle, stern;
 
 void initOpenGL(CUBE_STATE_T *s, libusb_device_handle *dev)
 {
@@ -37,25 +38,34 @@ void initOpenGL(CUBE_STATE_T *s, libusb_device_handle *dev)
 
 void initRenderScene()
 {
-	GLchar *vsStr, *fsStr;
-	GLuint generic_vs, generic_fs, generic_sp;
+	GLchar *vsStr, *vsCircleStr, *fsStr;
+	GLuint generic_vs, circle_vs, generic_fs, generic_sp, circle_sp;
 
 	loadShader(&vsStr, VS_SHADERNAME);
 	loadShader(&fsStr, FS_SHADERNAME);
+	loadShader(&vsCircleStr, VS_CIRCLE);
 	printf("%s\n",vsStr);
 	printf("%s\n",fsStr);
+	printf("%s\n",vsCircleStr);
 
 	generic_vs = createShader(GL_VERTEX_SHADER, vsStr);
 	printf("Vertex Shader: %d\n",generic_vs);
+
+	circle_vs = createShader(GL_VERTEX_SHADER, vsCircleStr);
+	printf("Circle Shader: %d\n",circle_vs);
 
 	generic_fs = createShader(GL_FRAGMENT_SHADER, fsStr);
 	printf("Fragment Shader: %d\n",generic_fs);
 
 	generic_sp = createShaderProgram(generic_vs, generic_fs);
-	printf("Shader Program: %d\n",generic_sp);
+	printf("Shader Program Generic: %d\n",generic_sp);
+
+	circle_sp = createShaderProgram(circle_vs, generic_fs);
+	printf("Shader Program Circle: %d\n",circle_sp);
 
 	free(vsStr);
 	free(fsStr);
+	free(vsCircleStr);
 
     //Triangle
 	initObject(&triangle, generic_sp, "res/triangle.geo");
@@ -79,8 +89,21 @@ void initRenderScene()
 	cross.mModel = scaleMatrix(identity(),vec3((float)SCREEN_WIDTH/(float)SCREEN_HEIGHT,1.0f,1.0f));
 	cross.color = getColor(1.0,0.0,0.0,1.0);
 
-	printf("vboID: %d\n",triangle.vboID);
-	printf("iboID: %d\n",triangle.iboID);
+    //Circle
+	initObject(&circle, circle_sp, "res/circle.geo");
+	circle.renderMode = GL_TRIANGLE_FAN;
+	circle.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,0.4f));
+	circle.mModel = translateMatrix(circle.mModel,vec3(1.0,0.5,0.0));
+    circle.mModel = transpose(circle.mModel);
+    circle.color = getColor(0.0,1.0,0.0,1.0);
+
+    //Stern
+    initObject(&stern, generic_sp, "res/stern.geo");
+    stern.renderMode = GL_TRIANGLES;
+    stern.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,0.4f));
+	stern.mModel = translateMatrix(stern.mModel,vec3(-1.0,-0.5,0.0));
+    stern.mModel = transpose(stern.mModel);
+    stern.color = getColor(0.8,0.0,0.8,1.0);
 }
 
 void renderLoop()
@@ -97,6 +120,8 @@ void renderLoop()
 		drawObject(&triangle);
 		drawObject(&rect);
 		drawObject(&cross);
+		drawObject(&circle);
+		drawObject(&stern);
 
 		eglSwapBuffers(state->display, state->surface);
 

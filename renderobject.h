@@ -9,9 +9,10 @@ typedef struct
 	GLuint uLen, uSize;
 	GLushort *indices;
 	GLuint indicesLen, indicesSize;
-	GLuint vboID, iboID;
+	GLuint vboID, iboID, uboID;
+	GLboolean isVBO, isUBO;
 	GLuint shaderProgram;
-	GLuint vertexHandle;
+	GLuint vertexHandle, uHandle;
 	GLint mProjHandle, mModelHandle, colorHandle;
 	Matrix4 mProj, mModel;
 	Vector4 color;

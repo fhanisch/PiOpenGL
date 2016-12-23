@@ -1,5 +1,36 @@
+#include <stdlib.h>
 #include <string.h>
 #include "matrix.h"
+
+float *vecnf(float start, float step, uint count)
+{
+	uint i;
+	float *v = malloc(count*sizeof(float));
+
+	for (i=0;i<count;i++) v[i] = start + i*step;
+
+	return v;
+}
+
+uint *vecni(uint start, uint count)
+{
+	uint i;
+	uint *v = malloc(count*sizeof(uint));
+
+	for (i=0;i<count;i++) v[i] = start + i;
+
+	return v;
+}
+
+ushort *vecns(uint start, uint count)
+{
+	uint i;
+	ushort *v = malloc(count*sizeof(ushort));
+
+	for (i=0;i<count;i++) v[i] = start + i;
+
+	return v;
+}
 
 Vector3 vec3(float x, float y, float z)
 {

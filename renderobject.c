@@ -13,33 +13,32 @@ void createVBO(GLenum bufferType, GLuint *bufferID, GLuint bufferSize, GLvoid *b
 	glBufferData(bufferType, bufferSize, buffer, GL_STATIC_DRAW);
 }
 
-void initObject(Object *obj, GLuint shaderProgram)
+void initObject(Object *obj, GLuint shaderProgram, char *fileName)
 {
-    loadModel(obj,"res/triangle.geo");
+    loadModel(obj,fileName);
 
-	obj->indices[0]=0;obj->indices[1]=1;obj->indices[2]=2;
+    obj->mProj = scaleMatrix(identity(),vec3((float)SCREEN_HEIGHT/(float)SCREEN_WIDTH,1.0f,1.0f));
+    obj->mProj = transpose(obj->mProj);
+    obj->shaderProgram = shaderProgram;
+    obj->vertexHandle = glGetAttribLocation(obj->shaderProgram,"vertex");
+    obj->mProjHandle = glGetUniformLocation(obj->shaderProgram,"mProj");
+    obj->mModelHandle = glGetUniformLocation(obj->shaderProgram,"mModel");
+    obj->colorHandle = glGetUniformLocation(obj->shaderProgram,"color");
 
-	obj->mProj = identity();
-	obj->color = getColor(0.0f, 1.0f, 1.0f, 0.7f);
-
-	obj->shaderProgram = shaderProgram;
-	obj->vertexHandle = glGetAttribLocation(obj->shaderProgram,"vertex");
-	obj->mProjHandle = glGetUniformLocation(obj->shaderProgram,"mProj");
-	obj->colorHandle = glGetUniformLocation(obj->shaderProgram,"color");
-
-	createVBO(GL_ARRAY_BUFFER, &obj->vboID, obj->verticesSize, obj->vertices);
-	createVBO(GL_ELEMENT_ARRAY_BUFFER, &obj->iboID, obj->indicesSize, obj->indices);
+    createVBO(GL_ARRAY_BUFFER, &obj->vboID, obj->verticesSize, obj->vertices);
+    createVBO(GL_ELEMENT_ARRAY_BUFFER, &obj->iboID, obj->indicesSize, obj->indices);
 }
 
 void drawObject(Object *o)
 {
 	glUseProgram(o->shaderProgram);
 	glUniformMatrix4fv(o->mProjHandle,1,GL_FALSE,(GLfloat*)&o->mProj);
+	glUniformMatrix4fv(o->mModelHandle,1,GL_FALSE,(GLfloat*)&o->mModel);
 	glUniform4fv(o->colorHandle,1, (GLfloat*)&o->color);
 	glBindBuffer(GL_ARRAY_BUFFER, o->vboID);
 	glEnableVertexAttribArray(o->vertexHandle);
 	glVertexAttribPointer(o->vertexHandle, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	glDrawElements(GL_TRIANGLES, o->indicesLen, GL_UNSIGNED_SHORT, 0);
+	glDrawElements(o->renderMode, o->indicesLen, GL_UNSIGNED_SHORT, 0);
 }
 
 status loadModel(Object *o, char *fileName)
@@ -58,8 +57,6 @@ status loadModel(Object *o, char *fileName)
     buffer = (char*)malloc(filesize)+1;
     fread(buffer,1,filesize,file);
     buffer[filesize] = '\0';
-
-    printf("%s\n",buffer);
 
     while(bufPtr<filesize)
     {

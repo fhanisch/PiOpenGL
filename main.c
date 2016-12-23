@@ -69,8 +69,8 @@ status createOpenGLContext(CUBE_STATE_T *p_state)
 	p_state->context = eglCreateContext(p_state->display, config, EGL_NO_CONTEXT,context_attributes);
 	ret = graphics_get_display_size(0, &p_state->screen_width,&p_state->screen_height);
 	if (ret) return err;
-	p_state->screen_width = 1920;
-	p_state->screen_height = 1080;
+	p_state->screen_width = SCREEN_WIDTH;
+	p_state->screen_height = SCREEN_HEIGHT;
 	dst_rect.x = 0;
 	dst_rect.y = 0;
 	dst_rect.width = p_state->screen_width;

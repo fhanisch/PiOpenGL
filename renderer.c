@@ -14,7 +14,7 @@
 
 static CUBE_STATE_T *state = NULL;
 static libusb_device_handle *usb_dev = NULL;
-static Object triangle;
+static Object triangle, rect, cross;
 
 void initOpenGL(CUBE_STATE_T *s, libusb_device_handle *dev)
 {
@@ -57,7 +57,28 @@ void initRenderScene()
 	free(vsStr);
 	free(fsStr);
 
-	initObject(&triangle, generic_sp);
+    //Triangle
+	initObject(&triangle, generic_sp, "res/triangle.geo");
+	triangle.renderMode = GL_TRIANGLES;
+	triangle.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,0.4f));
+	triangle.mModel = translateMatrix(triangle.mModel,vec3(-1.0f,0.5f,0.0f));
+	triangle.mModel = transpose(triangle.mModel); // Matrizen für Shader müssen transponiert werden
+	triangle.color = getColor(0.0f, 1.0f, 1.0f, 1.0f);
+
+    //Rectangle
+	initObject(&rect, generic_sp, "res/rectangle.geo");
+	rect.renderMode = GL_TRIANGLE_STRIP;
+	rect.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,0.4f));
+	rect.mModel = translateMatrix(rect.mModel,vec3(1.0,-0.5,0.0));
+	rect.mModel = transpose(rect.mModel);
+	rect.color = getColor(1.0f,1.0f,0.0f,1.0f);
+
+	//Cross
+	initObject(&cross, generic_sp, "res/cross.geo");
+	cross.renderMode = GL_LINES;
+	cross.mModel = scaleMatrix(identity(),vec3((float)SCREEN_WIDTH/(float)SCREEN_HEIGHT,1.0f,1.0f));
+	cross.color = getColor(1.0,0.0,0.0,1.0);
+
 	printf("vboID: %d\n",triangle.vboID);
 	printf("iboID: %d\n",triangle.iboID);
 }
@@ -74,6 +95,8 @@ void renderLoop()
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		drawObject(&triangle);
+		drawObject(&rect);
+		drawObject(&cross);
 
 		eglSwapBuffers(state->display, state->surface);
 

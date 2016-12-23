@@ -3,7 +3,12 @@
 
 typedef struct
 {
-	float v1, v2, v3, v4;
+	float x, y, z;
+} Vector3;
+
+typedef struct
+{
+	float x, y, z, w;
 } Vector4;
 
 typedef struct
@@ -15,7 +20,11 @@ typedef struct
 
 } Matrix4;
 
-Matrix4 identity();
+Vector3 vec3(float x, float y, float z);
 Vector4 getColor(float r, float g, float b, float a);
+Matrix4 identity();
+Matrix4 scaleMatrix(Matrix4 M, Vector3 s);
+Matrix4 translateMatrix(Matrix4 M, Vector3 t);
+Matrix4 transpose(Matrix4 M);
 
 #endif

@@ -1,2 +1,5 @@
 PiOpenGL
+res/
+*.cbp
+*.layout
 

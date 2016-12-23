@@ -1,18 +1,20 @@
-/*
- * =====================================================================
- * 
- * PiOpenGL
- * 
- * 05.12.2016
- * 
- * =====================================================================
- */
- 
+/**
+    =====================================================================
+
+    PiOpenGL
+
+    @date 05.12.2016
+
+    @author FH
+
+    =====================================================================
+*/
+
 #include <stdio.h>
 #include <libusb-1.0/libusb.h>
 #include <bcm_host.h>
 #include <EGL/egl.h>
-//#include <GL/glew.h>
+#include "types_egl.h"
 #include "PiOpenGL.h"
 #include "renderer.h"
 
@@ -60,11 +62,11 @@ status createOpenGLContext(CUBE_STATE_T *p_state)
 	};
 
 	bcm_host_init();
-	p_state->display = eglGetDisplay(EGL_DEFAULT_DISPLAY);	
+	p_state->display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 	result = eglInitialize(p_state->display, NULL, NULL);
-	result = eglChooseConfig(p_state->display, attribute_list, &config, 1, &num_config);		
-	result = eglBindAPI(EGL_OPENGL_ES_API);	
-	p_state->context = eglCreateContext(p_state->display, config, EGL_NO_CONTEXT,context_attributes);	
+	result = eglChooseConfig(p_state->display, attribute_list, &config, 1, &num_config);
+	result = eglBindAPI(EGL_OPENGL_ES_API);
+	p_state->context = eglCreateContext(p_state->display, config, EGL_NO_CONTEXT,context_attributes);
 	ret = graphics_get_display_size(0, &p_state->screen_width,&p_state->screen_height);
 	if (ret) return err;
 	p_state->screen_width = 1920;
@@ -76,7 +78,7 @@ status createOpenGLContext(CUBE_STATE_T *p_state)
 	src_rect.x = 0;
 	src_rect.y = 0;
 	src_rect.width = p_state->screen_width << 16;
-	src_rect.height = p_state->screen_height << 16;        
+	src_rect.height = p_state->screen_height << 16;
 	dispman_display = vc_dispmanx_display_open(0);
 	dispman_update = vc_dispmanx_update_start(0);
 	dispman_element = vc_dispmanx_element_add(dispman_update, dispman_display,0, &dst_rect, 0,&src_rect, DISPMANX_PROTECTION_NONE, 0, 0, 0);
@@ -84,17 +86,17 @@ status createOpenGLContext(CUBE_STATE_T *p_state)
 	nativewindow.width = p_state->screen_width;
 	nativewindow.height = p_state->screen_height;
 	vc_dispmanx_update_submit_sync( dispman_update );
-	p_state->surface = eglCreateWindowSurface( p_state->display, config, (EGLNativeWindowType)&nativewindow, NULL );		
+	p_state->surface = eglCreateWindowSurface( p_state->display, config, (EGLNativeWindowType)&nativewindow, NULL );
 	result = eglMakeCurrent(p_state->display, p_state->surface, p_state->surface, p_state->context);
 	if (!result) return err;
-	
+
 	return ok;
 }
 
 status init_keyboard(libusb_device_handle **usb_dev)
-{	
+{
 	status ret;
-	
+
 	ret = libusb_init(NULL);
 	if (ret)
 	{
@@ -102,17 +104,17 @@ status init_keyboard(libusb_device_handle **usb_dev)
 		return err;
 	}
 	printf("USB initialisiert!\n");
-	
+
 	*usb_dev = libusb_open_device_with_vid_pid(NULL,VENDOR_ID,PRODUCT_ID);
-	if (!*usb_dev)	
+	if (!*usb_dev)
 	{
 		printf("USB Device wurde nicht gefunden!\n");
 		return err;
 	}
 	printf("USB Device erkannt!\n");
-	
+
 	libusb_detach_kernel_driver(*usb_dev,KEYBOARD_INTERFACE);
-	
+
 	ret = libusb_claim_interface(*usb_dev,KEYBOARD_INTERFACE);
 	if (ret < 0)
 	{
@@ -120,7 +122,7 @@ status init_keyboard(libusb_device_handle **usb_dev)
 		return 3;
 	}
 	printf("USB interfaces claimed!\n");
-	
+
 	return ok;
 }
 
@@ -134,16 +136,16 @@ void close_keyboard(libusb_device_handle **usb_dev)
 
 int main(int argc, char *argv[])
 {
-	status ret;	
-	CUBE_STATE_T state;	
+	status ret;
+	CUBE_STATE_T state;
 	libusb_device_handle *usb_dev = NULL;
-	
+
 	printf("*** PiOpenGL ***\n");
 	printf("================\n\n");
-			
+
 	ret = init_keyboard(&usb_dev);
 	if (ret) return err;
-	
+
 	ret=createOpenGLContext(&state);
 	if (ret)
 	{
@@ -151,20 +153,11 @@ int main(int argc, char *argv[])
 		return err;
 	}
 	printf("OpenGLContext erstellt!\n");
-	/*
-	ret = glewInit();
-	if (ret)
-	{
-		printf("GLEW konnte nicht initialisiert werden!\n");
-		return err;
-	}
-	printf("GLEW initialisiert!\n");
-	*/
-	
+
 	initOpenGL(&state, usb_dev);
 	initRenderScene();
 	renderLoop();
-						
+
 	close_keyboard(&usb_dev);
 	return 0;
 }

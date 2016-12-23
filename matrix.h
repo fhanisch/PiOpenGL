@@ -16,6 +16,6 @@ typedef struct
 } Matrix4;
 
 Matrix4 identity();
-Vector4 getGreen();
+Vector4 getColor(float r, float g, float b, float a);
 
 #endif

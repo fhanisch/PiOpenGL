@@ -9,13 +9,13 @@ Matrix4 identity()
 	I.m22 = 1.0f;
 	I.m33 = 1.0f;
 	I.m44 = 1.0f;
-	
+
 	return I;
 }
 
-Vector4 getGreen()
+Vector4 getColor(float r, float g, float b, float a)
 {
-	Vector4 green={0.0f, 1.0f, 0.0f, 0.5f};
-	
-	return green;
+	Vector4 color={r, g, b, a};
+
+	return color;
 }

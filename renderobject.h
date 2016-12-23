@@ -13,11 +13,12 @@ typedef struct
 	GLint mProjHandle, colorHandle;
 	Matrix4 mProj;
 	Vector4 color;
-	
+
 } Object;
 
 void createVBO(GLenum bufferType, GLuint *bufferID, GLuint bufferSize, GLvoid *buffer);
 void initObject(Object *obj, GLuint shaderProgram);
 void drawObject(Object *o);
+status loadModel(Object *o, char *fileName);
 
 #endif

@@ -67,14 +67,14 @@ void initRenderScene()
 	free(fsStr);
 	free(vsCircleStr);
 
-    //Triangle
+	//Triangle
 	initObject(&triangle, generic_sp, "res/triangle.geo");
 	triangle.renderMode = GL_TRIANGLES;
 	triangle.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,0.4f));
 	triangle.mModel = translateMatrix(triangle.mModel,vec3(-1.0f,0.5f,0.0f));
 	triangle.color = getColor(0.0f, 1.0f, 1.0f, 1.0f);
 
-    //Rectangle
+	//Rectangle
 	initObject(&rect, generic_sp, "res/rectangle.geo");
 	rect.renderMode = GL_TRIANGLE_STRIP;
 	rect.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,0.4f));
@@ -87,19 +87,19 @@ void initRenderScene()
 	cross.mModel = scaleMatrix(identity(),vec3((float)SCREEN_WIDTH/(float)SCREEN_HEIGHT,1.0f,1.0f));
 	cross.color = getColor(1.0,0.0,0.0,1.0);
 
-    //Circle
+	//Circle
 	initObject(&circle, circle_sp, "res/circle.geo");
 	circle.renderMode = GL_TRIANGLE_FAN;
 	circle.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,0.4f));
 	circle.mModel = translateMatrix(circle.mModel,vec3(1.0,0.5,0.0));
-    circle.color = getColor(0.0,1.0,0.0,1.0);
+	circle.color = getColor(0.0,1.0,0.0,1.0);
 
-    //Stern
-    initObject(&stern, generic_sp, "res/stern.geo");
-    stern.renderMode = GL_TRIANGLES;
-    stern.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,0.4f));
+	//Stern
+	initObject(&stern, generic_sp, "res/stern.geo");
+	stern.renderMode = GL_TRIANGLES;
+	stern.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,0.4f));
 	stern.mModel = translateMatrix(stern.mModel,vec3(-1.0,-0.5,0.0));
-    stern.color = getColor(0.8,0.0,0.8,1.0);
+	stern.color = getColor(0.8,0.0,0.8,1.0);
 }
 
 void renderLoop()

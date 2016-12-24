@@ -18,7 +18,7 @@ typedef struct
 	float m31, m32, m33, m34;
 	float m41, m42, m43, m44;
 
-} Matrix4;
+} Matrix4, *pMatrix4;
 
 float *vecnf(float start, float step, uint count);
 uint *vecni(uint start, uint count);

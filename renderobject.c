@@ -20,7 +20,6 @@ void initObject(Object *obj, GLuint shaderProgram, char *fileName)
     loadModel(obj,fileName);
 
     obj->mProj = scaleMatrix(identity(),vec3((float)SCREEN_HEIGHT/(float)SCREEN_WIDTH,1.0f,1.0f));
-    obj->mProj = transpose(obj->mProj);
     obj->shaderProgram = shaderProgram;
 
     obj->mProjHandle = glGetUniformLocation(obj->shaderProgram,"mProj");
@@ -47,9 +46,14 @@ void initObject(Object *obj, GLuint shaderProgram, char *fileName)
 
 void drawObject(Object *o)
 {
+    Matrix4 mProj, mModel;
+    // Matrizen für Shader müssen transponiert werden
+    mProj = transpose(o->mProj);
+    mModel = transpose(o->mModel);
+
 	glUseProgram(o->shaderProgram);
-	glUniformMatrix4fv(o->mProjHandle,1,GL_FALSE,(GLfloat*)&o->mProj);
-	glUniformMatrix4fv(o->mModelHandle,1,GL_FALSE,(GLfloat*)&o->mModel);
+	glUniformMatrix4fv(o->mProjHandle,1,GL_FALSE,(GLfloat*)&mProj);
+	glUniformMatrix4fv(o->mModelHandle,1,GL_FALSE,(GLfloat*)&mModel);
 	glUniform4fv(o->colorHandle,1, (GLfloat*)&o->color);
 	if (o->isVBO)
 	{

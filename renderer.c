@@ -33,7 +33,7 @@ void initOpenGL(CUBE_STATE_T *s, libusb_device_handle *dev)
 	printf("OpenGL Version: %s\n",oglVersion);
 	printf("GLSL Version: %s\n",glslVersion);
 
-	glClearColor(1.0f,0.0f,1.0f,1.0f);
+	glClearColor(0.0f,0.0f,1.0f,1.0f);
 }
 
 void initRenderScene()
@@ -72,7 +72,6 @@ void initRenderScene()
 	triangle.renderMode = GL_TRIANGLES;
 	triangle.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,0.4f));
 	triangle.mModel = translateMatrix(triangle.mModel,vec3(-1.0f,0.5f,0.0f));
-	triangle.mModel = transpose(triangle.mModel); // Matrizen für Shader müssen transponiert werden
 	triangle.color = getColor(0.0f, 1.0f, 1.0f, 1.0f);
 
     //Rectangle
@@ -80,7 +79,6 @@ void initRenderScene()
 	rect.renderMode = GL_TRIANGLE_STRIP;
 	rect.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,0.4f));
 	rect.mModel = translateMatrix(rect.mModel,vec3(1.0,-0.5,0.0));
-	rect.mModel = transpose(rect.mModel);
 	rect.color = getColor(1.0f,1.0f,0.0f,1.0f);
 
 	//Cross
@@ -94,7 +92,6 @@ void initRenderScene()
 	circle.renderMode = GL_TRIANGLE_FAN;
 	circle.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,0.4f));
 	circle.mModel = translateMatrix(circle.mModel,vec3(1.0,0.5,0.0));
-    circle.mModel = transpose(circle.mModel);
     circle.color = getColor(0.0,1.0,0.0,1.0);
 
     //Stern
@@ -102,7 +99,6 @@ void initRenderScene()
     stern.renderMode = GL_TRIANGLES;
     stern.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,0.4f));
 	stern.mModel = translateMatrix(stern.mModel,vec3(-1.0,-0.5,0.0));
-    stern.mModel = transpose(stern.mModel);
     stern.color = getColor(0.8,0.0,0.8,1.0);
 }
 
@@ -125,13 +121,13 @@ void renderLoop()
 
 		eglSwapBuffers(state->display, state->surface);
 
-		ret = libusb_bulk_transfer(usb_dev,ENDPOINT_ADDRESS,rcvbuf,5,&transferred,0);
-		if (ret==0)
+		ret = libusb_bulk_transfer(usb_dev,ENDPOINT_ADDRESS,rcvbuf,5,&transferred,1);
+		if (ret==0 || ret==-7)
 		{
-			if (rcvbuf[2]==0x4f) glClearColor(1.0f,0.0f,1.0f,1.0f);
-			if (rcvbuf[2]==0x50) glClearColor(1.0f,0.0f,0.0f,1.0f);
-			if (rcvbuf[2]==0x51) glClearColor(0.0f,1.0f,0.0f,1.0f);
-			if (rcvbuf[2]==0x52) glClearColor(0.0f,0.0f,1.0f,1.0f);
+			if (rcvbuf[2]==0x4f || rcvbuf[3]==0x4f) rect.mModel = translateMatrix(rect.mModel,vec3(0.05,0.0,0.0));
+			if (rcvbuf[2]==0x50 || rcvbuf[3]==0x50) rect.mModel = translateMatrix(rect.mModel,vec3(-0.05,0.0,0.0));
+			if (rcvbuf[2]==0x51 || rcvbuf[3]==0x51) rect.mModel = translateMatrix(rect.mModel,vec3(0.0,-0.05,0.0));
+			if (rcvbuf[2]==0x52 || rcvbuf[3]==0x52) rect.mModel = translateMatrix(rect.mModel,vec3(0.0,+0.05,0.0));
 			if (rcvbuf[2]==0x29) quit=TRUE;
 		}
 		else

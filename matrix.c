@@ -75,16 +75,16 @@ Matrix4 translateMatrix(Matrix4 M, Vector3 t)
 
 Matrix4 transpose(Matrix4 M)
 {
-  unsigned int i,j;
-  Matrix4 T;
-  float *t=(float*)&T;
-  float *m=(float*)&M;
-  for(i=0;i<4;i++)
-  {
-    for(j=0;j<4;j++)
+    unsigned int i,j;
+    Matrix4 T;
+    float *t=(float*)&T;
+    float *m=(float*)&M;
+    for(i=0;i<4;i++)
     {
-      t[i+4*j] = m[j+4*i];
+        for(j=0;j<4;j++)
+        {
+            t[i+4*j] = m[j+4*i];
+        }
     }
-  }
-  return T;
+    return T;
 }

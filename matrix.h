@@ -4,12 +4,12 @@
 typedef struct
 {
 	float x, y, z;
-} Vector3;
+} Vector3, *pVector3;
 
 typedef struct
 {
 	float x, y, z, w;
-} Vector4;
+} Vector4, *pVector4;
 
 typedef struct
 {
@@ -24,10 +24,15 @@ float *vecnf(float start, float step, uint count);
 uint *vecni(uint start, uint count);
 ushort *vecns(uint start, uint count);
 Vector3 vec3(float x, float y, float z);
+pVector3 pTmpVec3(float x, float y, float z);
 Vector4 getColor(float r, float g, float b, float a);
 Matrix4 identity();
 Matrix4 scaleMatrix(Matrix4 M, Vector3 s);
 Matrix4 translateMatrix(Matrix4 M, Vector3 t);
+void translatePtrMatrix(pMatrix4 M, pVector3 t);
 Matrix4 transpose(Matrix4 M);
+Matrix4 getRotZ(float phi);
+pMatrix4 pTmpTranspose(pMatrix4 M);
+Matrix4 multMatrix(Matrix4 L, Matrix4 R);
 
 #endif

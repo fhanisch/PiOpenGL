@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <libusb-1.0/libusb.h>
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
-#include "types_egl.h"
+#include "types.h"
 #include "PiOpenGL.h"
 #include "shader.h"
 #include "matrix.h"
@@ -14,10 +15,10 @@
 #define FS_SHADERNAME "generic.fs"
 
 static CUBE_STATE_T *state = NULL;
-static libusb_device_handle *usb_dev = NULL;
+static USB_DEV *usb_dev;
 static Object triangle, rect, cross, circle, stern;
 
-void initOpenGL(CUBE_STATE_T *s, libusb_device_handle *dev)
+void initOpenGL(CUBE_STATE_T *s, USB_DEV *dev)
 {
 	const GLubyte *vendor, *renderer, *oglVersion, *glslVersion;
 
@@ -106,8 +107,12 @@ void renderLoop()
 {
 	status ret;
 	bool quit=FALSE;
-	unsigned char rcvbuf[8];
+	unsigned char keybuf[8];
+	unsigned char gamectrlbuf[8];
 	int transferred;
+
+	memset(keybuf, 0, sizeof(keybuf));
+	memset(gamectrlbuf, 128, sizeof(gamectrlbuf));
 
 	while(!quit)
 	{
@@ -121,14 +126,26 @@ void renderLoop()
 
 		eglSwapBuffers(state->display, state->surface);
 
-		ret = libusb_bulk_transfer(usb_dev,ENDPOINT_ADDRESS,rcvbuf,5,&transferred,1);
+		ret = libusb_bulk_transfer(usb_dev->hid_keyboard,ENDPOINT_ADDRESS,keybuf,5,&transferred,1);
 		if (ret==0 || ret==-7)
 		{
-			if (rcvbuf[2]==0x4f || rcvbuf[3]==0x4f) rect.mModel = translateMatrix(rect.mModel,vec3(0.05,0.0,0.0));
-			if (rcvbuf[2]==0x50 || rcvbuf[3]==0x50) rect.mModel = translateMatrix(rect.mModel,vec3(-0.05,0.0,0.0));
-			if (rcvbuf[2]==0x51 || rcvbuf[3]==0x51) rect.mModel = translateMatrix(rect.mModel,vec3(0.0,-0.05,0.0));
-			if (rcvbuf[2]==0x52 || rcvbuf[3]==0x52) rect.mModel = translateMatrix(rect.mModel,vec3(0.0,+0.05,0.0));
-			if (rcvbuf[2]==0x29) quit=TRUE;
+			if (keybuf[2]==0x4f || keybuf[3]==0x4f) translatePtrMatrix(&rect.mModel,pTmpVec3(0.05,0.0,0.0));
+			if (keybuf[2]==0x50 || keybuf[3]==0x50) translatePtrMatrix(&rect.mModel,pTmpVec3(-0.05,0.0,0.0));
+			if (keybuf[2]==0x51 || keybuf[3]==0x51) translatePtrMatrix(&rect.mModel,pTmpVec3(0.0,-0.05,0.0));
+			if (keybuf[2]==0x52 || keybuf[3]==0x52) translatePtrMatrix(&rect.mModel,pTmpVec3(0.0,+0.05,0.0));
+			if (keybuf[2]==0x29) quit=TRUE;
+		}
+		else
+		{
+			printf("Transfer Error: %d\n",ret);
+			quit=TRUE;
+		}
+		ret = libusb_bulk_transfer(usb_dev->hid_gamecontroller,ENDPOINT_ADDRESS,gamectrlbuf,5,&transferred,1);
+		if (ret==0 || ret==-7)
+		{
+			translatePtrMatrix(&circle.mModel, pTmpVec3((GLfloat)gamectrlbuf[0]/255.0-0.5,-(GLfloat)gamectrlbuf[1]/255.0+0.5,0.0));
+			stern.mModel = multMatrix(stern.mModel, getRotZ((GLfloat)gamectrlbuf[2]/255.0-0.5));
+			stern.mModel = multMatrix(getRotZ((GLfloat)gamectrlbuf[3]/255.0-0.5), stern.mModel);
 		}
 		else
 		{

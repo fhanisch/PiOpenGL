@@ -46,27 +46,21 @@ void initObject(Object *obj, GLuint shaderProgram, char *fileName)
 
 void drawObject(Object *o)
 {
-    Matrix4 mProj, mModel;
-    // Matrizen für Shader müssen transponiert werden
-    mProj = transpose(o->mProj);
-    mModel = transpose(o->mModel);
-
 	glUseProgram(o->shaderProgram);
-	glUniformMatrix4fv(o->mProjHandle,1,GL_FALSE,(GLfloat*)&mProj);
-	glUniformMatrix4fv(o->mModelHandle,1,GL_FALSE,(GLfloat*)&mModel);
+	glUniformMatrix4fv(o->mProjHandle,1,GL_FALSE,(GLfloat*)pTmpTranspose(&o->mProj)); // Matrizen für Shader müssen transponiert werden
+	glUniformMatrix4fv(o->mModelHandle,1,GL_FALSE,(GLfloat*)pTmpTranspose(&o->mModel)); // Matrizen für Shader müssen transponiert werden
 	glUniform4fv(o->colorHandle,1, (GLfloat*)&o->color);
 	if (o->isVBO)
 	{
-        glBindBuffer(GL_ARRAY_BUFFER, o->vboID);
-        glVertexAttribPointer(o->vertexHandle, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    }
+		glBindBuffer(GL_ARRAY_BUFFER, o->vboID);
+		glVertexAttribPointer(o->vertexHandle, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	}
 	if (o->isUBO)
 	{
-        glBindBuffer(GL_ARRAY_BUFFER, o->uboID);
-        glVertexAttribPointer(o->uHandle, 1, GL_FLOAT, GL_FALSE, 0, 0);
-
-    }
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, o->iboID);
+		glBindBuffer(GL_ARRAY_BUFFER, o->uboID);
+		glVertexAttribPointer(o->uHandle, 1, GL_FLOAT, GL_FALSE, 0, 0);
+	}
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, o->iboID);
 	glDrawElements(o->renderMode, o->indicesLen, GL_UNSIGNED_SHORT, 0);
 }
 

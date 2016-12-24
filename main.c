@@ -14,14 +14,18 @@
 #include <libusb-1.0/libusb.h>
 #include <bcm_host.h>
 #include <EGL/egl.h>
-#include "types_egl.h"
+#include "types.h"
 #include "PiOpenGL.h"
 #include "renderer.h"
 
 // Logitech - USB Receiver
-#define VENDOR_ID 0x046d
-#define PRODUCT_ID 0xc517
-#define KEYBOARD_INTERFACE 0
+#define KEYBOARD_VENDOR_ID 0x046d
+#define KEYBOARD_PRODUCT_ID 0xc517
+// Logitech - USB Game Controller
+#define GAMECONTROLLER_VENDOR_ID 0x046d
+#define GAMECONTROLLER_PRODUCT_ID 0xc218
+
+#define INTERFACE 0
 
 typedef struct
 {
@@ -93,7 +97,7 @@ status createOpenGLContext(CUBE_STATE_T *p_state)
 	return ok;
 }
 
-status init_keyboard(libusb_device_handle **usb_dev)
+status init_hid(libusb_device_handle **hid_dev, uint vendor_id, uint product_id, char *deviceName)
 {
 	status ret;
 
@@ -105,32 +109,32 @@ status init_keyboard(libusb_device_handle **usb_dev)
 	}
 	printf("USB initialisiert!\n");
 
-	*usb_dev = libusb_open_device_with_vid_pid(NULL,VENDOR_ID,PRODUCT_ID);
-	if (!*usb_dev)
+	*hid_dev = libusb_open_device_with_vid_pid(NULL,vendor_id,product_id);
+	if (!*hid_dev)
 	{
-		printf("USB Device wurde nicht gefunden!\n");
+		printf("USB %s wurde nicht gefunden!\n",deviceName);
 		return err;
 	}
-	printf("USB Device erkannt!\n");
+	printf("USB %s erkannt!\n",deviceName);
 
-	libusb_detach_kernel_driver(*usb_dev,KEYBOARD_INTERFACE);
+	libusb_detach_kernel_driver(*hid_dev,INTERFACE);
 
-	ret = libusb_claim_interface(*usb_dev,KEYBOARD_INTERFACE);
+	ret = libusb_claim_interface(*hid_dev,INTERFACE);
 	if (ret < 0)
 	{
-		printf("Claim fehlgeschlagen: %d!\n", ret);
+		printf("Claim %s Interface fehlgeschlagen: %d!\n", deviceName, ret);
 		return 3;
 	}
-	printf("USB interfaces claimed!\n");
+	printf("USB %s interface claimed!\n",deviceName);
 
 	return ok;
 }
 
-void close_keyboard(libusb_device_handle **usb_dev)
+void close_hid(libusb_device_handle *hid_dev)
 {
-	libusb_release_interface(*usb_dev, KEYBOARD_INTERFACE);
-	libusb_attach_kernel_driver(*usb_dev,KEYBOARD_INTERFACE);
-	libusb_close(*usb_dev);
+	libusb_release_interface(hid_dev, INTERFACE);
+	libusb_attach_kernel_driver(hid_dev,INTERFACE);
+	libusb_close(hid_dev);
 	libusb_exit(NULL);
 }
 
@@ -138,12 +142,14 @@ int main(int argc, char *argv[])
 {
 	status ret;
 	CUBE_STATE_T state;
-	libusb_device_handle *usb_dev = NULL;
+	USB_DEV usb_dev;
 
 	printf("*** PiOpenGL ***\n");
 	printf("================\n\n");
 
-	ret = init_keyboard(&usb_dev);
+	ret = init_hid(&usb_dev.hid_keyboard,KEYBOARD_VENDOR_ID, KEYBOARD_PRODUCT_ID, "Keyboard");
+	if (ret) return err;
+	ret = init_hid(&usb_dev.hid_gamecontroller,GAMECONTROLLER_VENDOR_ID, GAMECONTROLLER_PRODUCT_ID, "Game Controller");
 	if (ret) return err;
 
 	ret=createOpenGLContext(&state);
@@ -154,10 +160,11 @@ int main(int argc, char *argv[])
 	}
 	printf("OpenGLContext erstellt!\n");
 
-	initOpenGL(&state, usb_dev);
+	initOpenGL(&state, &usb_dev);
 	initRenderScene();
 	renderLoop();
 
-	close_keyboard(&usb_dev);
+	close_hid(usb_dev.hid_keyboard);
+	close_hid(usb_dev.hid_gamecontroller);
 	return 0;
 }

@@ -10,4 +10,11 @@ typedef struct
 	EGLContext context;
 } CUBE_STATE_T;
 
+typedef struct
+{
+	libusb_device_handle *hid_keyboard;
+	libusb_device_handle *hid_mouse;
+	libusb_device_handle *hid_gamecontroller;
+} USB_DEV;
+
 #endif

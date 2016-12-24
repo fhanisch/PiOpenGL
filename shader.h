@@ -5,4 +5,4 @@ int loadShader(GLchar **shaderStr, char *fileName);
 GLuint createShader(GLenum shaderType, const GLchar *shaderStr);
 GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader);
 
-#endif
+#endif // SHADER_H

@@ -9,6 +9,7 @@
 #include "shader.h"
 #include "matrix.h"
 #include "renderobject.h"
+#include "texture.h"
 
 #define VS_SHADERNAME "generic.vs"
 #define VS_CIRCLE "circle.vs"
@@ -17,6 +18,7 @@
 static CUBE_STATE_T *state = NULL;
 static USB_DEV *usb_dev;
 static Object triangle, rect, cross, circle, stern;
+static Texture tex;
 
 void initOpenGL(CUBE_STATE_T *s, USB_DEV *dev)
 {
@@ -34,7 +36,7 @@ void initOpenGL(CUBE_STATE_T *s, USB_DEV *dev)
 	printf("OpenGL Version: %s\n",oglVersion);
 	printf("GLSL Version: %s\n",glslVersion);
 
-	glClearColor(0.0f,0.0f,1.0f,1.0f);
+	glClearColor(0.0f,0.0f,1.0f,0.0f);
 }
 
 void initRenderScene()
@@ -67,6 +69,14 @@ void initRenderScene()
 	free(vsStr);
 	free(fsStr);
 	free(vsCircleStr);
+
+	//Texture
+	initTexture(&tex, GL_TEXTURE0, "res/green_scratches.bmp");
+	printf("Texuture xSize = %u\n",tex.xSize);
+	printf("Texuture ySize = %u\n",tex.ySize);
+	printf("Texture ID = %d\n", tex.id);
+	printf("Texture Index = %d\n", tex.textureIndex);
+	printf("Texture Index = %d\n", GL_TEXTURE0);
 
 	//Triangle
 	initObject(&triangle, generic_sp, "res/triangle.geo");
@@ -144,8 +154,8 @@ void renderLoop()
 		if (ret==0 || ret==-7)
 		{
 			translatePtrMatrix(&circle.mModel, pTmpVec3((GLfloat)gamectrlbuf[0]/255.0-0.5,-(GLfloat)gamectrlbuf[1]/255.0+0.5,0.0));
-			stern.mModel = multMatrix(stern.mModel, getRotZ((GLfloat)gamectrlbuf[2]/255.0-0.5));
-			stern.mModel = multMatrix(getRotZ((GLfloat)gamectrlbuf[3]/255.0-0.5), stern.mModel);
+			stern.mModel = multPtrMatrix(&stern.mModel, pTmpGetRotZ((GLfloat)gamectrlbuf[2]/255.0-0.5));
+			stern.mModel = multPtrMatrix(pTmpGetRotZ((GLfloat)gamectrlbuf[3]/255.0-0.5), &stern.mModel);
 		}
 		else
 		{

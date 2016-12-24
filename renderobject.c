@@ -17,6 +17,7 @@ void initObject(Object *obj, GLuint shaderProgram, char *fileName)
 {
     obj->isVBO = GL_FALSE;
     obj->isUBO = GL_FALSE;
+    obj->isTCO = GL_FALSE;
     loadModel(obj,fileName);
 
     obj->mProj = scaleMatrix(identity(),vec3((float)SCREEN_HEIGHT/(float)SCREEN_WIDTH,1.0f,1.0f));
@@ -25,6 +26,7 @@ void initObject(Object *obj, GLuint shaderProgram, char *fileName)
     obj->mProjHandle = glGetUniformLocation(obj->shaderProgram,"mProj");
     obj->mModelHandle = glGetUniformLocation(obj->shaderProgram,"mModel");
     obj->colorHandle = glGetUniformLocation(obj->shaderProgram,"color");
+    obj->samplerHandle = glGetUniformLocation(shaderProgram,"samp");
 
     if (obj->isVBO)
     {
@@ -40,6 +42,12 @@ void initObject(Object *obj, GLuint shaderProgram, char *fileName)
         createVBO(GL_ARRAY_BUFFER, &obj->uboID, obj->uSize, obj->u);
         free(obj->u);
     }
+    if (obj->isTCO)
+    {
+		obj->texCoordsHandle = glGetAttribLocation(obj->shaderProgram,"texcoord");
+		glEnableVertexAttribArray(obj->texCoordsHandle);
+		createVBO(GL_ARRAY_BUFFER, &obj->tcoID, obj->texCoordsSize, obj->texCoords);
+    }
     createVBO(GL_ELEMENT_ARRAY_BUFFER, &obj->iboID, obj->indicesSize, obj->indices);
     free(obj->indices);
 }
@@ -50,6 +58,7 @@ void drawObject(Object *o)
 	glUniformMatrix4fv(o->mProjHandle,1,GL_FALSE,(GLfloat*)pTmpTranspose(&o->mProj)); // Matrizen für Shader müssen transponiert werden
 	glUniformMatrix4fv(o->mModelHandle,1,GL_FALSE,(GLfloat*)pTmpTranspose(&o->mModel)); // Matrizen für Shader müssen transponiert werden
 	glUniform4fv(o->colorHandle,1, (GLfloat*)&o->color);
+	glUniform1i(o->samplerHandle,0);
 	if (o->isVBO)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, o->vboID);
@@ -59,6 +68,11 @@ void drawObject(Object *o)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, o->uboID);
 		glVertexAttribPointer(o->uHandle, 1, GL_FLOAT, GL_FALSE, 0, 0);
+	}
+	if (o->isTCO)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, o->tcoID);
+		glVertexAttribPointer(o->texCoordsHandle, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	}
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, o->iboID);
 	glDrawElements(o->renderMode, o->indicesLen, GL_UNSIGNED_SHORT, 0);
@@ -71,7 +85,6 @@ status loadModel(Object *o, char *fileName)
     uint bufPtr=0;
     uint i;
     char *buffer;
-    char str[16];
     float start, step;
     uint count;
 
@@ -85,8 +98,7 @@ status loadModel(Object *o, char *fileName)
 
     while(bufPtr<filesize)
     {
-        sscanf(buffer+bufPtr,"%s",str);
-        if(!strcmp(str,"vertices"))
+        if(!strncmp(buffer+bufPtr,"vertices",strlen("vertices")))
         {
             printf("%s\n","vertices");
             bufPtr+=strlen("vertices")+1;
@@ -106,7 +118,7 @@ status loadModel(Object *o, char *fileName)
             }
             continue;
         }
-        else if(!strcmp(str,"indices"))
+        else if(!strncmp(buffer+bufPtr,"indices",strlen("indices")))
         {
             printf("%s\n","indices");
             bufPtr+=strlen("indices")+1;
@@ -126,7 +138,7 @@ status loadModel(Object *o, char *fileName)
             printf("\n");
             continue;
         }
-        else if(!strcmp(str,"u"))
+        else if(!strncmp(buffer+bufPtr,"u",1))
         {
             bufPtr+=2;
             sscanf(buffer+bufPtr,"%f %f %u", &start, &step, &count);
@@ -140,6 +152,26 @@ status loadModel(Object *o, char *fileName)
             o->indicesSize = count * sizeof(GLushort);
             while(buffer[bufPtr]!='\n') bufPtr++;
             bufPtr++;
+            continue;
+        }
+        else if(!strncmp(buffer+bufPtr,"texcoords",strlen("texcoords")))
+        {
+            printf("%s\n","texcoords");
+            bufPtr+=strlen("texcoords")+1;
+            sscanf(buffer+bufPtr,"%d",&o->texCoordsLen);
+            printf("Anzahl: %d\n",o->texCoordsLen);
+            o->texCoordsSize = 2 * o->texCoordsLen * sizeof(GLfloat);
+            o->texCoords = malloc(o->texCoordsSize);
+            o->isTCO = GL_TRUE;
+            while(buffer[bufPtr]!='\n') bufPtr++;
+            bufPtr++;
+            for(i=0;i<o->texCoordsLen;i++)
+            {
+                sscanf(buffer+bufPtr,"%f %f",o->texCoords+2*i,o->texCoords+2*i+1);
+                printf("%4.1f %4.1f\n",o->texCoords[2*i],o->texCoords[2*i+1]);
+                while(buffer[bufPtr]!='\n') bufPtr++;
+                bufPtr++;
+            }
             continue;
         }
         bufPtr++;

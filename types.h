@@ -1,5 +1,5 @@
-#ifndef TYPES_EGL_H
-#define TYPES_EGL_H
+#ifndef TYPES_H
+#define TYPES_H
 
 typedef struct
 {
@@ -17,4 +17,4 @@ typedef struct
 	libusb_device_handle *hid_gamecontroller;
 } USB_DEV;
 
-#endif
+#endif // TYPES_H

@@ -5,4 +5,4 @@ void initOpenGL(CUBE_STATE_T *s, USB_DEV *dev);
 void initRenderScene();
 void renderLoop();
 
-#endif
+#endif // RENDERER_H

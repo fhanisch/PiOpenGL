@@ -32,7 +32,9 @@ Matrix4 translateMatrix(Matrix4 M, Vector3 t);
 void translatePtrMatrix(pMatrix4 M, pVector3 t);
 Matrix4 transpose(Matrix4 M);
 Matrix4 getRotZ(float phi);
+pMatrix4 pTmpGetRotZ(float phi);
 pMatrix4 pTmpTranspose(pMatrix4 M);
 Matrix4 multMatrix(Matrix4 L, Matrix4 R);
+Matrix4 multPtrMatrix(pMatrix4 L, pMatrix4 R);
 
-#endif
+#endif // MATRIX_H

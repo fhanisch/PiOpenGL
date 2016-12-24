@@ -108,6 +108,7 @@ Matrix4 getRotZ(float phi)
 pMatrix4 pTmpGetRotZ(float phi)
 {
 	static Matrix4 Z;
+	Z = identity();
 	Z.m11 = cos(phi);	Z.m12 = sin(phi);
 	Z.m21 = -sin(phi);	Z.m22 = cos(phi);
 	return &Z;
@@ -151,6 +152,21 @@ Matrix4 multMatrix(Matrix4 L, Matrix4 R)
 	float *m = (float*)&M;
 	float *r = (float*)&R;
 	float *l = (float*)&L;
+	unsigned int i,j;
+
+	for (j=0;j<4;j++)
+		for (i=0;i<4;i++)
+			m[4*j+i] = l[4*j]*r[i] + l[4*j+1]*r[i+4] + l[4*j+2]*r[i+8] + l[4*j+3]*r[i+12];
+
+	return M;
+}
+
+Matrix4 multPtrMatrix(pMatrix4 L, pMatrix4 R)
+{
+	Matrix4 M;
+	float *m = (float*)&M;
+	float *r = (float*)R;
+	float *l = (float*)L;
 	unsigned int i,j;
 
 	for (j=0;j<4;j++)

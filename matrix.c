@@ -175,3 +175,15 @@ Matrix4 multPtrMatrix(pMatrix4 L, pMatrix4 R)
 
 	return M;
 }
+
+Matrix4 getFrustum(float r, float t, float n, float f)
+{
+	Matrix4 F;
+
+	F.m11=n/r;	F.m12=0;	F.m13=0;			F.m14=0;
+	F.m21=0;	F.m22=n/t;	F.m23=0;			F.m24=0;
+	F.m31=0;	F.m32=0;	F.m33=-(f+n)/(f-n);	F.m34=-2*f*n/(f-n);
+	F.m41=0;	F.m42=0;	F.m43=-1;			F.m44=0;
+
+	return F;
+}

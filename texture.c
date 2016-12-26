@@ -40,7 +40,6 @@ void convertTexture(GLubyte *texture, void *pixels, uint xSize, uint ySize)
 
 	for (i=ySize-1;i>=1;i--)
 	{
-		printf("i = %d\n",i);
 		k=i*xSize*3;
 		for (j=0;j<xSize;j++)
 		{

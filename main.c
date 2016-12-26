@@ -14,7 +14,7 @@
 #include <libusb-1.0/libusb.h>
 #include <bcm_host.h>
 #include <EGL/egl.h>
-#include <SDL/SDL_ttf.h>
+#include <SDL2/SDL_ttf.h>
 #include "types.h"
 #include "PiOpenGL.h"
 #include "renderer.h"
@@ -102,14 +102,6 @@ status init_hid(libusb_device_handle **hid_dev, uint vendor_id, uint product_id,
 {
 	status ret;
 
-	ret = libusb_init(NULL);
-	if (ret)
-	{
-		printf("USB konnte nicht initialisiert werden!\n");
-		return err;
-	}
-	printf("USB initialisiert!\n");
-
 	*hid_dev = libusb_open_device_with_vid_pid(NULL,vendor_id,product_id);
 	if (!*hid_dev)
 	{
@@ -136,7 +128,6 @@ void close_hid(libusb_device_handle *hid_dev)
 	libusb_release_interface(hid_dev, INTERFACE);
 	libusb_attach_kernel_driver(hid_dev,INTERFACE);
 	libusb_close(hid_dev);
-	libusb_exit(NULL);
 }
 
 int main(int argc, char *argv[])
@@ -147,6 +138,14 @@ int main(int argc, char *argv[])
 
 	printf("*** PiOpenGL ***\n");
 	printf("================\n\n");
+
+	ret = libusb_init(NULL);
+	if (ret)
+	{
+		printf("USB konnte nicht initialisiert werden!\n");
+		return err;
+	}
+	printf("USB initialisiert!\n");
 
 	ret = init_hid(&usb_dev.hid_keyboard,KEYBOARD_VENDOR_ID, KEYBOARD_PRODUCT_ID, "Keyboard");
 	if (ret) return err;
@@ -169,5 +168,6 @@ int main(int argc, char *argv[])
 
 	close_hid(usb_dev.hid_keyboard);
 	close_hid(usb_dev.hid_gamecontroller);
-	return 0;
+	libusb_exit(NULL);
+	return ok;
 }

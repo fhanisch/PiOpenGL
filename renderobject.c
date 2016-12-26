@@ -27,27 +27,26 @@ void initObject(Object *obj, GLuint shaderProgram, char *fileName)
     obj->mProjHandle = glGetUniformLocation(obj->shaderProgram,"mProj");
     obj->mModelHandle = glGetUniformLocation(obj->shaderProgram,"mModel");
     obj->colorHandle = glGetUniformLocation(obj->shaderProgram,"color");
-    obj->samplerHandle = glGetUniformLocation(shaderProgram,"samp");
+    obj->samplerHandle = glGetUniformLocation(obj->shaderProgram,"samp");
 
+	///Wichtig: Möglichst keine identischen Buffer mehrfach generieren!
     if (obj->isVBO)
     {
         obj->vertexHandle = glGetAttribLocation(obj->shaderProgram,"vertex");
-        glEnableVertexAttribArray(obj->vertexHandle);
         createVBO(GL_ARRAY_BUFFER, &obj->vboID, obj->verticesSize, obj->vertices);
         free(obj->vertices);
     }
     if (obj->isUBO)
     {
         obj->uHandle = glGetAttribLocation(obj->shaderProgram,"u");
-        glEnableVertexAttribArray(obj->uHandle);
         createVBO(GL_ARRAY_BUFFER, &obj->uboID, obj->uSize, obj->u);
         free(obj->u);
     }
     if (obj->isTCO)
     {
 		obj->texCoordsHandle = glGetAttribLocation(obj->shaderProgram,"texcoord");
-		glEnableVertexAttribArray(obj->texCoordsHandle);
 		createVBO(GL_ARRAY_BUFFER, &obj->tcoID, obj->texCoordsSize, obj->texCoords);
+		free(obj->texCoords);
     }
     createVBO(GL_ELEMENT_ARRAY_BUFFER, &obj->iboID, obj->indicesSize, obj->indices);
     free(obj->indices);
@@ -56,6 +55,7 @@ void initObject(Object *obj, GLuint shaderProgram, char *fileName)
 void drawObject(Object *o)
 {
 	glUseProgram(o->shaderProgram);
+
 	glUniformMatrix4fv(o->mProjHandle,1,GL_FALSE,(GLfloat*)pTmpTranspose(&o->mProj)); // Matrizen für Shader müssen transponiert werden
 	glUniformMatrix4fv(o->mModelHandle,1,GL_FALSE,(GLfloat*)pTmpTranspose(&o->mModel)); // Matrizen für Shader müssen transponiert werden
 	glUniform4fv(o->colorHandle,1, (GLfloat*)&o->color);
@@ -64,16 +64,19 @@ void drawObject(Object *o)
 	if (o->isVBO)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, o->vboID);
+		glEnableVertexAttribArray(o->vertexHandle);
 		glVertexAttribPointer(o->vertexHandle, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	}
 	if (o->isUBO)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, o->uboID);
+		glEnableVertexAttribArray(o->uHandle);
 		glVertexAttribPointer(o->uHandle, 1, GL_FLOAT, GL_FALSE, 0, 0);
 	}
 	if (o->isTCO)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, o->tcoID);
+		glEnableVertexAttribArray(o->texCoordsHandle);
 		glVertexAttribPointer(o->texCoordsHandle, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	}
 	if (o->isTex)

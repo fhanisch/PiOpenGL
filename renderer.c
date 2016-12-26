@@ -4,7 +4,7 @@
 #include <libusb-1.0/libusb.h>
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
-#include <SDL/SDL_ttf.h>
+#include <SDL2/SDL_ttf.h>
 #include "types.h"
 #include "PiOpenGL.h"
 #include "shader.h"
@@ -23,6 +23,7 @@
 
 static CUBE_STATE_T *state = NULL;
 static USB_DEV *usb_dev;
+static bool f1 = TRUE;
 static Object triangle, rect, cross, circle, stern, background, boden, txtBlock;
 
 void initOpenGL(CUBE_STATE_T *s, USB_DEV *dev)
@@ -41,15 +42,25 @@ void initOpenGL(CUBE_STATE_T *s, USB_DEV *dev)
 	printf("OpenGL Version: %s\n",oglVersion);
 	printf("GLSL Version: %s\n",glslVersion);
 
-	//Transparenz
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+	if (f1)
+	{
+		//Transparenz
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+	}
+	else
+	{
+		//Transparenz
+		//glEnable(GL_BLEND);
+		//glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
-	//glEnable(GL_DEPTH_TEST);
-	//glDepthFunc(GL_LESS);
+		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_LESS);
+
+		glClearDepthf(1.0f);
+	}
 
 	glClearColor(0.0f,0.0f,0.0f,1.0f); // Transparenz möglich
-	//glClearDepthf(1.0f);
 }
 
 void initRenderScene()
@@ -81,7 +92,6 @@ void initRenderScene()
 	generic_sp = createShaderProgram(generic_vs, generic_fs);
 	generictex_sp = createShaderProgram(generictex_vs, generictex_fs);
 	generictext_sp = createShaderProgram(generictex_vs, generictext_fs);
-
 	circle_sp = createShaderProgram(circle_vs, generic_fs);
 
 	free(vsGenericStr);
@@ -166,6 +176,10 @@ void initRenderScene()
     txtBlock.isTex = GL_TRUE;
     txtBlock.mModel = scaleMatrix(identity(),vec3(0.5,0.05,1.0));
     txtBlock.mModel = translateMatrix(txtBlock.mModel,vec3(-0.4,0.8,0.0));
+
+    //Wall
+	//boden.mProj = getFrustum(0.25*(GLfloat)SCREEN_WIDTH/(GLfloat)SCREEN_HEIGHT,0.25,0.5,100.0);
+	//boden.mModel = translateMatrix(identity(), vec3(0.0,0.0,-5.0));
 }
 
 void renderLoop()
@@ -181,45 +195,84 @@ void renderLoop()
 
 	while(!quit)
 	{
-		glClear(GL_COLOR_BUFFER_BIT);
-		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		drawObject(&background);
-		drawObject(&boden);
-		drawObject(&triangle);
-		drawObject(&rect);
-		drawObject(&circle);
-		drawObject(&stern);
-		drawObject(&cross);
-		drawObject(&txtBlock);
-
-		eglSwapBuffers(state->display, state->surface);
-
-		ret = libusb_bulk_transfer(usb_dev->hid_keyboard,ENDPOINT_ADDRESS,keybuf,5,&transferred,1);
-		if (ret==0 || ret==-7)
+		if (f1)
 		{
-			if (keybuf[2]==0x4f || keybuf[3]==0x4f) translatePtrMatrix(&rect.mModel,pTmpVec3(0.05,0.0,0.0));
-			if (keybuf[2]==0x50 || keybuf[3]==0x50) translatePtrMatrix(&rect.mModel,pTmpVec3(-0.05,0.0,0.0));
-			if (keybuf[2]==0x51 || keybuf[3]==0x51) translatePtrMatrix(&rect.mModel,pTmpVec3(0.0,-0.05,0.0));
-			if (keybuf[2]==0x52 || keybuf[3]==0x52) translatePtrMatrix(&rect.mModel,pTmpVec3(0.0,+0.05,0.0));
-			if (keybuf[2]==0x29) quit=TRUE;
+			glClear(GL_COLOR_BUFFER_BIT);
+
+			drawObject(&background);
+			drawObject(&boden);
+			drawObject(&triangle);
+			drawObject(&rect);
+			drawObject(&circle);
+			drawObject(&stern);
+			drawObject(&cross);
+			drawObject(&txtBlock);
+
+			eglSwapBuffers(state->display, state->surface);
+
+			ret = libusb_bulk_transfer(usb_dev->hid_keyboard,ENDPOINT_ADDRESS,keybuf,5,&transferred,1);
+			if (ret==0 || ret==-7)
+			{
+				if (keybuf[2]==0x4f || keybuf[3]==0x4f) translatePtrMatrix(&rect.mModel,pTmpVec3(0.05,0.0,0.0));
+				if (keybuf[2]==0x50 || keybuf[3]==0x50) translatePtrMatrix(&rect.mModel,pTmpVec3(-0.05,0.0,0.0));
+				if (keybuf[2]==0x51 || keybuf[3]==0x51) translatePtrMatrix(&rect.mModel,pTmpVec3(0.0,-0.05,0.0));
+				if (keybuf[2]==0x52 || keybuf[3]==0x52) translatePtrMatrix(&rect.mModel,pTmpVec3(0.0,+0.05,0.0));
+				if (keybuf[2]==0x29) quit=TRUE;
+			}
+			else
+			{
+				printf("Transfer Error: %d\n",ret);
+				quit=TRUE;
+			}
+			ret = libusb_bulk_transfer(usb_dev->hid_gamecontroller,ENDPOINT_ADDRESS,gamectrlbuf,5,&transferred,1);
+			if (ret==0 || ret==-7)
+			{
+				translatePtrMatrix(&circle.mModel, pTmpVec3((GLfloat)gamectrlbuf[0]/256.0-0.5,-(GLfloat)gamectrlbuf[1]/256.0+0.5,0.0));
+				stern.mModel = multPtrMatrix(&stern.mModel, pTmpGetRotZ((GLfloat)gamectrlbuf[2]/256.0-0.5));
+				stern.mModel = multPtrMatrix(pTmpGetRotZ((GLfloat)gamectrlbuf[3]/256.0-0.5), &stern.mModel);
+			}
+			else
+			{
+				printf("Transfer Error: %d\n",ret);
+				quit=TRUE;
+			}
 		}
 		else
 		{
-			printf("Transfer Error: %d\n",ret);
-			quit=TRUE;
-		}
-		ret = libusb_bulk_transfer(usb_dev->hid_gamecontroller,ENDPOINT_ADDRESS,gamectrlbuf,5,&transferred,1);
-		if (ret==0 || ret==-7)
-		{
-			translatePtrMatrix(&circle.mModel, pTmpVec3((GLfloat)gamectrlbuf[0]/256.0-0.5,-(GLfloat)gamectrlbuf[1]/256.0+0.5,0.0));
-			stern.mModel = multPtrMatrix(&stern.mModel, pTmpGetRotZ((GLfloat)gamectrlbuf[2]/256.0-0.5));
-			stern.mModel = multPtrMatrix(pTmpGetRotZ((GLfloat)gamectrlbuf[3]/256.0-0.5), &stern.mModel);
-		}
-		else
-		{
-			printf("Transfer Error: %d\n",ret);
-			quit=TRUE;
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			drawObject(&boden);
+			//drawObject(&rect);
+			//drawObject(&triangle);
+
+			eglSwapBuffers(state->display, state->surface);
+
+			ret = libusb_bulk_transfer(usb_dev->hid_keyboard,ENDPOINT_ADDRESS,keybuf,5,&transferred,1);
+			if (ret==0 || ret==-7)
+			{
+				/*if (keybuf[2]==0x4f || keybuf[3]==0x4f) translatePtrMatrix(&rect.mModel,pTmpVec3(0.05,0.0,0.0));
+				if (keybuf[2]==0x50 || keybuf[3]==0x50) translatePtrMatrix(&rect.mModel,pTmpVec3(-0.05,0.0,0.0));
+				if (keybuf[2]==0x51 || keybuf[3]==0x51) translatePtrMatrix(&rect.mModel,pTmpVec3(0.0,-0.05,0.0));
+				if (keybuf[2]==0x52 || keybuf[3]==0x52) translatePtrMatrix(&rect.mModel,pTmpVec3(0.0,+0.05,0.0));*/
+				if (keybuf[2]==0x29) quit=TRUE;
+			}
+			else
+			{
+				printf("Transfer Error: %d\n",ret);
+				quit=TRUE;
+			}
+			ret = libusb_bulk_transfer(usb_dev->hid_gamecontroller,ENDPOINT_ADDRESS,gamectrlbuf,5,&transferred,1);
+			if (ret==0 || ret==-7)
+			{
+				translatePtrMatrix(&boden.mModel, pTmpVec3(0.0, 0.0, (GLfloat)gamectrlbuf[1]/256.0-0.5));
+				//stern.mModel = multPtrMatrix(&stern.mModel, pTmpGetRotZ((GLfloat)gamectrlbuf[2]/256.0-0.5));
+				//stern.mModel = multPtrMatrix(pTmpGetRotZ((GLfloat)gamectrlbuf[3]/256.0-0.5), &stern.mModel);
+			}
+			else
+			{
+				printf("Transfer Error: %d\n",ret);
+				quit=TRUE;
+			}
 		}
 	}
 }

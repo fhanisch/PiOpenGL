@@ -36,5 +36,6 @@ pMatrix4 pTmpGetRotZ(float phi);
 pMatrix4 pTmpTranspose(pMatrix4 M);
 Matrix4 multMatrix(Matrix4 L, Matrix4 R);
 Matrix4 multPtrMatrix(pMatrix4 L, pMatrix4 R);
+Matrix4 getFrustum(float r, float t, float n, float f);
 
 #endif // MATRIX_H

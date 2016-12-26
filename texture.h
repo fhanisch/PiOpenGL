@@ -8,9 +8,10 @@ typedef struct
 	GLubyte *texture;
 	uint xSize, ySize;
 	GLchar *fileName;
+	GLenum pixelFormat;
 } Texture;
 
-void initTexture(Texture *tex, GLenum texindex, char *fileName);
+void initTexture(Texture *tex, GLenum texindex, GLenum format, char *fileName, SDL_Surface *font);
 int loadTexture(Texture *tex);
 void genTexture(Texture *tex);
 

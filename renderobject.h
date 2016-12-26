@@ -12,7 +12,7 @@ typedef struct
 	GLushort *indices;
 	GLuint indicesLen, indicesSize;
 	GLuint vboID, iboID, uboID, tcoID, texID;
-	GLboolean isVBO, isUBO, isTCO;
+	GLboolean isVBO, isUBO, isTCO, isTex;
 	GLuint shaderProgram;
 	GLuint vertexHandle, uHandle, texCoordsHandle;
 	GLint mProjHandle, mModelHandle, colorHandle, samplerHandle;

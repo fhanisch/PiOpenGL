@@ -18,6 +18,7 @@ void initObject(Object *obj, GLuint shaderProgram, char *fileName)
     obj->isVBO = GL_FALSE;
     obj->isUBO = GL_FALSE;
     obj->isTCO = GL_FALSE;
+    obj->isTex = GL_FALSE;
     loadModel(obj,fileName);
 
     obj->mProj = scaleMatrix(identity(),vec3((float)SCREEN_HEIGHT/(float)SCREEN_WIDTH,1.0f,1.0f));
@@ -58,7 +59,8 @@ void drawObject(Object *o)
 	glUniformMatrix4fv(o->mProjHandle,1,GL_FALSE,(GLfloat*)pTmpTranspose(&o->mProj)); // Matrizen für Shader müssen transponiert werden
 	glUniformMatrix4fv(o->mModelHandle,1,GL_FALSE,(GLfloat*)pTmpTranspose(&o->mModel)); // Matrizen für Shader müssen transponiert werden
 	glUniform4fv(o->colorHandle,1, (GLfloat*)&o->color);
-	glUniform1i(o->samplerHandle,0);
+	if (o->samplerHandle>=0) glUniform1i(o->samplerHandle,0);
+
 	if (o->isVBO)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, o->vboID);
@@ -74,6 +76,10 @@ void drawObject(Object *o)
 		glBindBuffer(GL_ARRAY_BUFFER, o->tcoID);
 		glVertexAttribPointer(o->texCoordsHandle, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	}
+	if (o->isTex)
+    {
+		glBindTexture(GL_TEXTURE_2D,o->texID);
+    }
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, o->iboID);
 	glDrawElements(o->renderMode, o->indicesLen, GL_UNSIGNED_SHORT, 0);
 }

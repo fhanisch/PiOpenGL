@@ -14,6 +14,7 @@
 #include <libusb-1.0/libusb.h>
 #include <bcm_host.h>
 #include <EGL/egl.h>
+#include <SDL/SDL_ttf.h>
 #include "types.h"
 #include "PiOpenGL.h"
 #include "renderer.h"
@@ -159,6 +160,8 @@ int main(int argc, char *argv[])
 		return err;
 	}
 	printf("OpenGLContext erstellt!\n");
+
+	TTF_Init(); //init SDL True Type Fonts
 
 	initOpenGL(&state, &usb_dev);
 	initRenderScene();

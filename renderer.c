@@ -4,6 +4,7 @@
 #include <libusb-1.0/libusb.h>
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
+#include <SDL/SDL_ttf.h>
 #include "types.h"
 #include "PiOpenGL.h"
 #include "shader.h"
@@ -11,14 +12,18 @@
 #include "renderobject.h"
 #include "texture.h"
 
-#define VS_SHADERNAME "generic.vs"
-#define VS_CIRCLE "circle.vs"
-#define FS_SHADERNAME "generic.fs"
+#define VS_GENERIC "shader/generic.vs"
+#define VS_GENERIC_TEX "shader/generic_tex.vs"
+#define VS_CIRCLE "shader/circle.vs"
+#define FS_GENERIC "shader/generic.fs"
+#define FS_GENERIC_TEX "shader/generic_tex.fs"
+#define FS_GENERIC_TEXT "shader/generic_text.fs"
+
+#define TEXT_OUT "Das ist das Haus vom Nikolaus !!!"
 
 static CUBE_STATE_T *state = NULL;
 static USB_DEV *usb_dev;
-static Object triangle, rect, cross, circle, stern;
-static Texture tex;
+static Object triangle, rect, cross, circle, stern, background, boden, txtBlock;
 
 void initOpenGL(CUBE_STATE_T *s, USB_DEV *dev)
 {
@@ -36,81 +41,131 @@ void initOpenGL(CUBE_STATE_T *s, USB_DEV *dev)
 	printf("OpenGL Version: %s\n",oglVersion);
 	printf("GLSL Version: %s\n",glslVersion);
 
-	glClearColor(0.0f,0.0f,1.0f,0.0f);
+	//Transparenz
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+
+	//glEnable(GL_DEPTH_TEST);
+	//glDepthFunc(GL_LESS);
+
+	glClearColor(0.0f,0.0f,0.0f,1.0f); // Transparenz möglich
+	//glClearDepthf(1.0f);
 }
 
 void initRenderScene()
 {
-	GLchar *vsStr, *vsCircleStr, *fsStr;
-	GLuint generic_vs, circle_vs, generic_fs, generic_sp, circle_sp;
+	GLchar *vsGenericStr, *vsGenericTexStr, *vsCircleStr, *fsGenericStr, *fsGenericTexStr, *fsGenericTextStr;
+	GLuint generic_vs, generictex_vs, circle_vs, generic_fs, generictex_fs, generictext_fs, generic_sp, generictex_sp, generictext_sp, circle_sp;
+	Texture tex, fliessen, text;
+	TTF_Font *font;
+	SDL_Surface *message;
+	SDL_PixelFormat *format;
+	SDL_Color textColor = { 255, 255, 255 };
 
-	loadShader(&vsStr, VS_SHADERNAME);
-	loadShader(&fsStr, FS_SHADERNAME);
+	//Create Shader
+	loadShader(&vsGenericStr, VS_GENERIC);
+	loadShader(&fsGenericStr, FS_GENERIC);
+	loadShader(&vsGenericTexStr, VS_GENERIC_TEX);
+	loadShader(&fsGenericTexStr, FS_GENERIC_TEX);
+	loadShader(&fsGenericTextStr, FS_GENERIC_TEXT);
 	loadShader(&vsCircleStr, VS_CIRCLE);
-	printf("%s\n",vsStr);
-	printf("%s\n",fsStr);
-	printf("%s\n",vsCircleStr);
 
-	generic_vs = createShader(GL_VERTEX_SHADER, vsStr);
-	printf("Vertex Shader: %d\n",generic_vs);
-
+	generic_vs = createShader(GL_VERTEX_SHADER, vsGenericStr);
+	generictex_vs = createShader(GL_VERTEX_SHADER, vsGenericTexStr);
 	circle_vs = createShader(GL_VERTEX_SHADER, vsCircleStr);
-	printf("Circle Shader: %d\n",circle_vs);
 
-	generic_fs = createShader(GL_FRAGMENT_SHADER, fsStr);
-	printf("Fragment Shader: %d\n",generic_fs);
+	generic_fs = createShader(GL_FRAGMENT_SHADER, fsGenericStr);
+	generictex_fs = createShader(GL_FRAGMENT_SHADER, fsGenericTexStr);
+	generictext_fs = createShader(GL_FRAGMENT_SHADER, fsGenericTextStr);
 
 	generic_sp = createShaderProgram(generic_vs, generic_fs);
-	printf("Shader Program Generic: %d\n",generic_sp);
+	generictex_sp = createShaderProgram(generictex_vs, generictex_fs);
+	generictext_sp = createShaderProgram(generictex_vs, generictext_fs);
 
 	circle_sp = createShaderProgram(circle_vs, generic_fs);
-	printf("Shader Program Circle: %d\n",circle_sp);
 
-	free(vsStr);
-	free(fsStr);
+	free(vsGenericStr);
+	free(fsGenericStr);
+	free(vsGenericTexStr);
+	free(fsGenericTexStr);
+	free(fsGenericTextStr);
 	free(vsCircleStr);
 
+	//Font
+	font = TTF_OpenFont( "res/Ubuntu-B.ttf", 32 );
+	message = TTF_RenderText_Solid( font, TEXT_OUT, textColor );
+	printf("w: %i\n",message->w);
+	printf("h: %i\n",message->h);
+	format = message->format;
+	printf("BitsPerPixel: %i\n",format->BitsPerPixel);
+	printf("BytesPerPixel: %i\n",format->BytesPerPixel);
+
 	//Texture
-	initTexture(&tex, GL_TEXTURE0, "res/green_scratches.bmp");
+	initTexture(&tex, GL_TEXTURE0, GL_RGB, "res/green_scratches.bmp", NULL);
+	initTexture(&fliessen, GL_TEXTURE0, GL_RGB, "res/fliessen.bmp",NULL);
+	initTexture(&text, GL_TEXTURE0, GL_RGB, NULL, message);
 	printf("Texuture xSize = %u\n",tex.xSize);
 	printf("Texuture ySize = %u\n",tex.ySize);
 	printf("Texture ID = %d\n", tex.id);
 	printf("Texture Index = %d\n", tex.textureIndex);
-	printf("Texture Index = %d\n", GL_TEXTURE0);
 
 	//Triangle
 	initObject(&triangle, generic_sp, "res/triangle.geo");
 	triangle.renderMode = GL_TRIANGLES;
-	triangle.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,0.4f));
+	triangle.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,1.0f));
 	triangle.mModel = translateMatrix(triangle.mModel,vec3(-1.0f,0.5f,0.0f));
 	triangle.color = getColor(0.0f, 1.0f, 1.0f, 1.0f);
 
 	//Rectangle
 	initObject(&rect, generic_sp, "res/rectangle.geo");
 	rect.renderMode = GL_TRIANGLE_STRIP;
-	rect.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,0.4f));
+	rect.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,1.0f));
 	rect.mModel = translateMatrix(rect.mModel,vec3(1.0,-0.5,0.0));
 	rect.color = getColor(1.0f,1.0f,0.0f,1.0f);
+	rect.isTCO = GL_FALSE;
 
 	//Cross
 	initObject(&cross, generic_sp, "res/cross.geo");
 	cross.renderMode = GL_LINES;
-	cross.mModel = scaleMatrix(identity(),vec3((float)SCREEN_WIDTH/(float)SCREEN_HEIGHT,1.0f,1.0f));
+	cross.mProj = identity();
+	cross.mModel = identity();
 	cross.color = getColor(1.0,0.0,0.0,1.0);
 
 	//Circle
 	initObject(&circle, circle_sp, "res/circle.geo");
 	circle.renderMode = GL_TRIANGLE_FAN;
-	circle.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,0.4f));
+	circle.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,1.0f));
 	circle.mModel = translateMatrix(circle.mModel,vec3(1.0,0.5,0.0));
 	circle.color = getColor(0.0,1.0,0.0,1.0);
 
 	//Stern
 	initObject(&stern, generic_sp, "res/stern.geo");
 	stern.renderMode = GL_TRIANGLES;
-	stern.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,0.4f));
+	stern.mModel = scaleMatrix(identity(),vec3(0.4f,0.4f,1.0f));
 	stern.mModel = translateMatrix(stern.mModel,vec3(-1.0,-0.5,0.0));
 	stern.color = getColor(0.8,0.0,0.8,1.0);
+
+	//background
+	initObject(&background, generictex_sp, "res/rectangle.geo");
+	background.renderMode = GL_TRIANGLE_STRIP;
+	background.mProj = identity();
+	background.mModel = translateMatrix(identity(),vec3(0.0,0.0,0.0));
+	background.isTex = GL_TRUE;
+	background.texID = tex.id;
+
+	//Boden
+	boden = background;
+	boden.texID = fliessen.id;
+    boden.mProj = rect.mProj;
+    boden.mModel = scaleMatrix(identity(),vec3(0.4,0.4,1.0));
+
+    //Text Block
+    initObject(&txtBlock, generictext_sp, "res/rectangle.geo");
+    txtBlock.renderMode = GL_TRIANGLE_STRIP;
+    txtBlock.texID = text.id;
+    txtBlock.isTex = GL_TRUE;
+    txtBlock.mModel = scaleMatrix(identity(),vec3(0.5,0.05,1.0));
+    txtBlock.mModel = translateMatrix(txtBlock.mModel,vec3(-0.4,0.8,0.0));
 }
 
 void renderLoop()
@@ -127,12 +182,16 @@ void renderLoop()
 	while(!quit)
 	{
 		glClear(GL_COLOR_BUFFER_BIT);
+		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		drawObject(&background);
+		drawObject(&boden);
 		drawObject(&triangle);
 		drawObject(&rect);
-		drawObject(&cross);
 		drawObject(&circle);
 		drawObject(&stern);
+		drawObject(&cross);
+		drawObject(&txtBlock);
 
 		eglSwapBuffers(state->display, state->surface);
 
@@ -153,9 +212,9 @@ void renderLoop()
 		ret = libusb_bulk_transfer(usb_dev->hid_gamecontroller,ENDPOINT_ADDRESS,gamectrlbuf,5,&transferred,1);
 		if (ret==0 || ret==-7)
 		{
-			translatePtrMatrix(&circle.mModel, pTmpVec3((GLfloat)gamectrlbuf[0]/255.0-0.5,-(GLfloat)gamectrlbuf[1]/255.0+0.5,0.0));
-			stern.mModel = multPtrMatrix(&stern.mModel, pTmpGetRotZ((GLfloat)gamectrlbuf[2]/255.0-0.5));
-			stern.mModel = multPtrMatrix(pTmpGetRotZ((GLfloat)gamectrlbuf[3]/255.0-0.5), &stern.mModel);
+			translatePtrMatrix(&circle.mModel, pTmpVec3((GLfloat)gamectrlbuf[0]/256.0-0.5,-(GLfloat)gamectrlbuf[1]/256.0+0.5,0.0));
+			stern.mModel = multPtrMatrix(&stern.mModel, pTmpGetRotZ((GLfloat)gamectrlbuf[2]/256.0-0.5));
+			stern.mModel = multPtrMatrix(pTmpGetRotZ((GLfloat)gamectrlbuf[3]/256.0-0.5), &stern.mModel);
 		}
 		else
 		{

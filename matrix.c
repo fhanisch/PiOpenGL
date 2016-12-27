@@ -97,6 +97,30 @@ void translatePtrMatrix(pMatrix4 M, pVector3 t)
 	M->m34+=t->z;
 }
 
+void setPtrPosition(pMatrix4 M, pVector3 t)
+{
+	M->m14=t->x;
+	M->m24=t->y;
+	M->m34=t->z;
+}
+
+Matrix4 getRotY(float phi)
+{
+	Matrix4 Y=identity();
+	Y.m11 = cos(phi);	Y.m13 = sin(phi);
+	Y.m31 = -sin(phi);	Y.m33 = cos(phi);
+	return Y;
+}
+
+pMatrix4 pTmpGetRotY(float phi)
+{
+	static Matrix4 Y;
+	Y=identity();
+	Y.m11 = cos(phi);	Y.m13 = sin(phi);
+	Y.m31 = -sin(phi);	Y.m33 = cos(phi);
+	return &Y;
+}
+
 Matrix4 getRotZ(float phi)
 {
 	Matrix4 Z=identity();

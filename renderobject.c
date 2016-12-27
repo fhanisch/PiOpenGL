@@ -22,9 +22,11 @@ void initObject(Object *obj, GLuint shaderProgram, char *fileName)
     loadModel(obj,fileName);
 
     obj->mProj = scaleMatrix(identity(),vec3((float)SCREEN_HEIGHT/(float)SCREEN_WIDTH,1.0f,1.0f));
+    obj->mView = identity();
     obj->shaderProgram = shaderProgram;
 
     obj->mProjHandle = glGetUniformLocation(obj->shaderProgram,"mProj");
+    obj->mViewHandle = glGetUniformLocation(obj->shaderProgram,"mView");
     obj->mModelHandle = glGetUniformLocation(obj->shaderProgram,"mModel");
     obj->colorHandle = glGetUniformLocation(obj->shaderProgram,"color");
     obj->samplerHandle = glGetUniformLocation(obj->shaderProgram,"samp");
@@ -57,6 +59,7 @@ void drawObject(Object *o)
 	glUseProgram(o->shaderProgram);
 
 	glUniformMatrix4fv(o->mProjHandle,1,GL_FALSE,(GLfloat*)pTmpTranspose(&o->mProj)); // Matrizen für Shader müssen transponiert werden
+	glUniformMatrix4fv(o->mViewHandle,1,GL_FALSE,(GLfloat*)pTmpTranspose(&o->mView)); // Matrizen für Shader müssen transponiert werden
 	glUniformMatrix4fv(o->mModelHandle,1,GL_FALSE,(GLfloat*)pTmpTranspose(&o->mModel)); // Matrizen für Shader müssen transponiert werden
 	glUniform4fv(o->colorHandle,1, (GLfloat*)&o->color);
 	if (o->samplerHandle>=0) glUniform1i(o->samplerHandle,0);

@@ -23,8 +23,8 @@
 
 static CUBE_STATE_T *state = NULL;
 static USB_DEV *usb_dev;
-static bool f1 = TRUE;
-static Object triangle, rect, cross, circle, stern, background, boden, txtBlock;
+static bool f1 = FALSE;
+static Object triangle, rect, cross, circle, stern, background, boden, txtBlock, cube;
 
 void initOpenGL(CUBE_STATE_T *s, USB_DEV *dev)
 {
@@ -177,9 +177,13 @@ void initRenderScene()
     txtBlock.mModel = scaleMatrix(identity(),vec3(0.5,0.05,1.0));
     txtBlock.mModel = translateMatrix(txtBlock.mModel,vec3(-0.4,0.8,0.0));
 
-    //Wall
-	//boden.mProj = getFrustum(0.25*(GLfloat)SCREEN_WIDTH/(GLfloat)SCREEN_HEIGHT,0.25,0.5,100.0);
-	//boden.mModel = translateMatrix(identity(), vec3(0.0,0.0,-5.0));
+    //cube
+    initObject(&cube,generictex_sp,"res/cube.geo");
+    cube.renderMode = GL_TRIANGLES;
+	cube.mProj = getFrustum(0.25*(GLfloat)SCREEN_WIDTH/(GLfloat)SCREEN_HEIGHT,0.25,0.5,100.0);
+	cube.mModel = translateMatrix(identity(), vec3(0.0,0.0,-5.0));
+	cube.texID = fliessen.id;
+	cube.isTex = GL_TRUE;
 }
 
 void renderLoop()
@@ -189,6 +193,7 @@ void renderLoop()
 	unsigned char keybuf[8];
 	unsigned char gamectrlbuf[8];
 	int transferred;
+	uint i,j;
 
 	memset(keybuf, 0, sizeof(keybuf));
 	memset(gamectrlbuf, 128, sizeof(gamectrlbuf));
@@ -241,19 +246,28 @@ void renderLoop()
 		{
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			drawObject(&boden);
-			//drawObject(&rect);
-			//drawObject(&triangle);
+			for (i=0;i<10;i++)
+			{
+				for (j=0;j<10;j++)
+				{
+					setPtrPosition(&cube.mModel,pTmpVec3((float)i*5.0,0.0,-(float)j*5.0));
+					drawObject(&cube);
+				}
+			}
 
 			eglSwapBuffers(state->display, state->surface);
 
 			ret = libusb_bulk_transfer(usb_dev->hid_keyboard,ENDPOINT_ADDRESS,keybuf,5,&transferred,1);
 			if (ret==0 || ret==-7)
 			{
-				/*if (keybuf[2]==0x4f || keybuf[3]==0x4f) translatePtrMatrix(&rect.mModel,pTmpVec3(0.05,0.0,0.0));
-				if (keybuf[2]==0x50 || keybuf[3]==0x50) translatePtrMatrix(&rect.mModel,pTmpVec3(-0.05,0.0,0.0));
-				if (keybuf[2]==0x51 || keybuf[3]==0x51) translatePtrMatrix(&rect.mModel,pTmpVec3(0.0,-0.05,0.0));
-				if (keybuf[2]==0x52 || keybuf[3]==0x52) translatePtrMatrix(&rect.mModel,pTmpVec3(0.0,+0.05,0.0));*/
+				//if (keybuf[2]==0x4f || keybuf[3]==0x4f) translatePtrMatrix(&cube.mView,pTmpVec3(0.0,0.0,0.5));
+				//if (keybuf[2]==0x50 || keybuf[3]==0x50) translatePtrMatrix(&cube.mView,pTmpVec3(0.0,0.0,-0.0));
+				if (keybuf[2]==0x1a || keybuf[3]==0x1a) translatePtrMatrix(&cube.mView,pTmpVec3(0.0,0.0,0.05));
+				if (keybuf[2]==0x16 || keybuf[3]==0x16) translatePtrMatrix(&cube.mView,pTmpVec3(0.0,0.0,-0.05));
+				if (keybuf[2]==0x04 || keybuf[3]==0x04) translatePtrMatrix(&cube.mView,pTmpVec3(0.05,0.0,0.0));
+				if (keybuf[2]==0x07 || keybuf[3]==0x07) translatePtrMatrix(&cube.mView,pTmpVec3(-0.05,0.0,0.0));
+				if (keybuf[2]==0x4f || keybuf[3]==0x4f) cube.mView = multPtrMatrix(pTmpGetRotY(0.05),&cube.mView);
+				if (keybuf[2]==0x50 || keybuf[3]==0x50) cube.mView = multPtrMatrix(pTmpGetRotY(-0.05),&cube.mView);
 				if (keybuf[2]==0x29) quit=TRUE;
 			}
 			else
@@ -264,9 +278,9 @@ void renderLoop()
 			ret = libusb_bulk_transfer(usb_dev->hid_gamecontroller,ENDPOINT_ADDRESS,gamectrlbuf,5,&transferred,1);
 			if (ret==0 || ret==-7)
 			{
-				translatePtrMatrix(&boden.mModel, pTmpVec3(0.0, 0.0, (GLfloat)gamectrlbuf[1]/256.0-0.5));
-				//stern.mModel = multPtrMatrix(&stern.mModel, pTmpGetRotZ((GLfloat)gamectrlbuf[2]/256.0-0.5));
-				//stern.mModel = multPtrMatrix(pTmpGetRotZ((GLfloat)gamectrlbuf[3]/256.0-0.5), &stern.mModel);
+				translatePtrMatrix(&cube.mView, pTmpVec3(0.0, 0.0, -((GLfloat)gamectrlbuf[1]/256.0-0.5)));
+				translatePtrMatrix(&cube.mView, pTmpVec3(-((GLfloat)gamectrlbuf[0]/256.0-0.5), 0.0, 0.0));
+				cube.mView = multPtrMatrix(pTmpGetRotY((GLfloat)gamectrlbuf[2]/256.0-0.5), &cube.mView);
 			}
 			else
 			{

@@ -17,9 +17,10 @@ typedef struct
 	GLboolean isVBO, isU, isV, isTCO, isTex;
 	GLuint shaderProgram;
 	GLuint vertexHandle, uHandle, vHandle, texCoordsHandle;
-	GLint mProjHandle, mViewHandle, mModelHandle, colorHandle, samplerHandle;
+	GLint mProjHandle, mViewHandle, mModelHandle, mTransInvModelViewHandle, colorHandle, samplerHandle;
 	Matrix4 mProj, mModel;
 	pMatrix4 mView;
+	Matrix4 mTransInvModelView;
 	Vector4 color;
 	GLenum renderMode;
 	GLenum textureIndex;

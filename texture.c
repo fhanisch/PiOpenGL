@@ -34,6 +34,17 @@ void display_buffer_hex(unsigned char *buffer, unsigned size)
 	printf("\n\n" );
 }
 
+void setPixel(GLubyte *tex, int xSize, int x, int y)
+{
+	GLubyte value = 255;
+	uint pixelPtr;
+
+	pixelPtr = (y*xSize+x)*3;
+	tex[pixelPtr] = value;
+	tex[pixelPtr+1] = value;
+	tex[pixelPtr+2] = value;
+}
+
 void convertTexture(GLubyte *texture, void *pixels, uint xSize, uint ySize)
 {
 	uint i, j, k, ptr=0;
@@ -51,6 +62,35 @@ void convertTexture(GLubyte *texture, void *pixels, uint xSize, uint ySize)
 			texture[k+2] = 0;
 			k+=3;
 			ptr++;
+		}
+	}
+}
+
+void testCharMap(GLubyte *tex, int xSize)
+{
+	FILE *file;
+	GLubyte charMap[128*16];
+	GLubyte test=1;
+	uint character, zeile, bit;
+	uint charPtr=0;
+
+	file = fopen("res/font.bin","rb");
+	printf("Size Of CharMap: %i\n",sizeof(charMap));
+	fread(charMap,sizeof(charMap),1,file);
+	fclose(file);
+
+	for (character=0;character<128;character++)
+	{
+		for (zeile=0;zeile<16;zeile++)
+		{
+			for (bit=0;bit<8;bit++)
+			{
+				if (charMap[charPtr]>>bit & test)
+				{
+					setPixel(tex,xSize,200+bit+character*8,200-zeile);
+				}
+			}
+			charPtr++;
 		}
 	}
 }

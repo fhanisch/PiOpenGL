@@ -112,6 +112,15 @@ pMatrix4 pIdentity()
 	return I;
 }
 
+void setIdentity(pMatrix4 M)
+{
+	memset(M,0,sizeof(Matrix4));
+	M->m11 = 1.0f;
+	M->m22 = 1.0f;
+	M->m33 = 1.0f;
+	M->m44 = 1.0f;
+}
+
 Matrix4 scaleMatrix(Matrix4 M, Vector3 s)
 {
 	M.m11*=s.x;

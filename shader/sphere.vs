@@ -3,9 +3,13 @@
 uniform mat4 mProj;
 uniform mat4 mView;
 uniform mat4 mModel;
+uniform mat4 mTransInvModelView;
 
 attribute float u;
 attribute float v;
+
+varying vec4 vertexPosition;
+varying vec4 normalPosition;
 
 const float pi = 3.14159;
 
@@ -13,8 +17,6 @@ void main()
 {
     vec3 vertex;
 	vec3 normal;
-	vec4 vertexPosition;
-    vec4 normalPosition;
 
     float R=1.0;
     float u = 2.0*pi*u;
@@ -30,5 +32,7 @@ void main()
 
 	vertexPosition = mView * mModel * vec4(vertex, 1.0);
 	//normalPosition = transpose(inverse(mView*mModel)) * vec4(normal, 1.0);
+	normalPosition = mTransInvModelView * vec4(normal, 1.0);
+
 	gl_Position = mProj * vertexPosition;
 }

@@ -30,6 +30,7 @@ pVector3 pTmpVec3(float x, float y, float z);
 Vector4 getColor(float r, float g, float b, float a);
 Matrix4 identity();
 pMatrix4 pIdentity();
+void setIdentity(pMatrix4 M);
 Matrix4 scaleMatrix(Matrix4 M, Vector3 s);
 Matrix4 translateMatrix(Matrix4 M, Vector3 t);
 void translatePtrMatrix(pMatrix4 M, pVector3 t);

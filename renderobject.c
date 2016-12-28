@@ -25,11 +25,10 @@ void initObject(Object *obj, pMatrix4 mView, GLuint shaderProgram, char *fileNam
 		loadModel(obj,fileName);
 	else if ((flags&MESH_GRID)==MESH_GRID)
 	{
-		printf("Meshgrid:\n");
-		createMeshGrid(&obj->u,&obj->v,&obj->uSize,&obj->vSize, 10, 10);
+		createMeshGrid(&obj->u,&obj->v,&obj->uSize,&obj->vSize, 50, 50);
 		obj->isU = GL_TRUE;
 		obj->isV = GL_TRUE;
-		createMeshGridIndices(&obj->indices,&obj->indicesLen,&obj->indicesSize,10,10);
+		createMeshGridIndices(&obj->indices,&obj->indicesLen,&obj->indicesSize,50,50);
 	}
 
     obj->mProj = scaleMatrix(identity(),vec3((float)SCREEN_HEIGHT/(float)SCREEN_WIDTH,1.0f,1.0f));
@@ -40,6 +39,7 @@ void initObject(Object *obj, pMatrix4 mView, GLuint shaderProgram, char *fileNam
     obj->mProjHandle = glGetUniformLocation(obj->shaderProgram,"mProj");
     obj->mViewHandle = glGetUniformLocation(obj->shaderProgram,"mView");
     obj->mModelHandle = glGetUniformLocation(obj->shaderProgram,"mModel");
+    obj->mTransInvModelViewHandle = glGetUniformLocation(obj->shaderProgram,"mTransInvModelView");
     obj->colorHandle = glGetUniformLocation(obj->shaderProgram,"color");
     obj->samplerHandle = glGetUniformLocation(obj->shaderProgram,"samp");
 
@@ -79,6 +79,7 @@ void drawObject(Object *o)
 	glUniformMatrix4fv(o->mProjHandle,1,GL_FALSE,(GLfloat*)pTmpTranspose(&o->mProj)); // Matrizen für Shader müssen transponiert werden
 	glUniformMatrix4fv(o->mViewHandle,1,GL_FALSE,(GLfloat*)pTmpTranspose(o->mView)); // Matrizen für Shader müssen transponiert werden
 	glUniformMatrix4fv(o->mModelHandle,1,GL_FALSE,(GLfloat*)pTmpTranspose(&o->mModel)); // Matrizen für Shader müssen transponiert werden
+	if(o->mTransInvModelViewHandle>=0) glUniformMatrix4fv(o->mTransInvModelViewHandle,1,GL_FALSE,(GLfloat*)&o->mTransInvModelView);
 	glUniform4fv(o->colorHandle,1, (GLfloat*)&o->color);
 	if (o->samplerHandle>=0) glUniform1i(o->samplerHandle,0);
 

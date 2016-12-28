@@ -6,6 +6,7 @@
 #include <GLES2/gl2.h>
 #include <SDL2/SDL_ttf.h>
 #include <cblas.h>
+#include <lapacke.h>
 #include "types.h"
 #include "PiOpenGL.h"
 #include "shader.h"
@@ -20,6 +21,7 @@
 #define FS_GENERIC "shader/generic.fs"
 #define FS_GENERIC_TEX "shader/generic_tex.fs"
 #define FS_GENERIC_TEXT "shader/generic_text.fs"
+#define FS_ADS_PER_FRAGMENT "shader/ads_per_fragment.fs"
 
 #define TEXT_OUT "Das ist das Haus vom Nikolaus !!!"
 
@@ -70,9 +72,9 @@ void initOpenGL(CUBE_STATE_T *s, USB_DEV *dev)
 
 void initRenderScene()
 {
-	GLchar *vsGenericStr, *vsGenericTexStr, *vsCircleStr, *vsSphereStr, *fsGenericStr, *fsGenericTexStr, *fsGenericTextStr;
+	GLchar *vsGenericStr, *vsGenericTexStr, *vsCircleStr, *vsSphereStr, *fsGenericStr, *fsGenericTexStr, *fsGenericTextStr, *fsADSperFragStr;
 	GLuint generic_vs, generictex_vs, circle_vs, sphere_vs;
-	GLuint generic_fs, generictex_fs, generictext_fs;
+	GLuint generic_fs, generictex_fs, generictext_fs, ads_per_frag_fs;
 	GLuint generic_sp, generictex_sp, generictext_sp, circle_sp, sphere_sp;
 	Texture tex, fliessen, text, rock;
 	TTF_Font *font;
@@ -89,6 +91,7 @@ void initRenderScene()
 	loadShader(&fsGenericTextStr, FS_GENERIC_TEXT);
 	loadShader(&vsCircleStr, VS_CIRCLE);
 	loadShader(&vsSphereStr, VS_SPHERE);
+	loadShader(&fsADSperFragStr, FS_ADS_PER_FRAGMENT);
 
 	generic_vs = createShader(GL_VERTEX_SHADER, vsGenericStr);
 	generictex_vs = createShader(GL_VERTEX_SHADER, vsGenericTexStr);
@@ -98,12 +101,13 @@ void initRenderScene()
 	generic_fs = createShader(GL_FRAGMENT_SHADER, fsGenericStr);
 	generictex_fs = createShader(GL_FRAGMENT_SHADER, fsGenericTexStr);
 	generictext_fs = createShader(GL_FRAGMENT_SHADER, fsGenericTextStr);
+	ads_per_frag_fs = createShader(GL_FRAGMENT_SHADER, fsADSperFragStr);
 
 	generic_sp = createShaderProgram(generic_vs, generic_fs);
 	generictex_sp = createShaderProgram(generictex_vs, generictex_fs);
 	generictext_sp = createShaderProgram(generictex_vs, generictext_fs);
 	circle_sp = createShaderProgram(circle_vs, generic_fs);
-	sphere_sp = createShaderProgram(sphere_vs, generic_fs);
+	sphere_sp = createShaderProgram(sphere_vs, ads_per_frag_fs);
 
 	free(vsGenericStr);
 	free(fsGenericStr);
@@ -112,6 +116,7 @@ void initRenderScene()
 	free(fsGenericTextStr);
 	free(vsCircleStr);
 	free(vsSphereStr);
+	free(fsADSperFragStr);
 
 	//Font
 	font = TTF_OpenFont( "res/Ubuntu-B.ttf", 32 );
@@ -214,6 +219,7 @@ void initRenderScene()
 		sphere.renderMode = GL_TRIANGLES;
 		sphere.mProj = getFrustum(0.25*(GLfloat)SCREEN_WIDTH/(GLfloat)SCREEN_HEIGHT,0.25,0.5,50.0);
 		sphere.mModel = translateMatrix(identity(), vec3(0.0,0.0,-5.0));
+		sphere.mTransInvModelView = identity();
 		sphere.color = getColor(0.0,1.0,0.0,1.0);
 	}
 }
@@ -226,7 +232,8 @@ void renderLoop()
 	unsigned char gamectrlbuf[8];
 	int transferred;
 	//uint i,j;
-	Matrix4 M;
+	Matrix4 M, mModelView;
+	int ipiv[4];
 
 	memset(keybuf, 0, sizeof(keybuf));
 	memset(gamectrlbuf, 128, sizeof(gamectrlbuf));
@@ -278,6 +285,11 @@ void renderLoop()
 		else if (f2)
 		{
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			//Matrizenberechnung
+			mModelView = multPtrMatrix(mView,&sphere.mModel);
+			setIdentity(&sphere.mTransInvModelView);
+			LAPACKE_sgesv( LAPACK_ROW_MAJOR, 4, 4, (float*)&mModelView, 4, ipiv, (float*)&sphere.mTransInvModelView, 4 );
 
 			//drawObject(&cube);
 			drawObject(&sphere);

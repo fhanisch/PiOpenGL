@@ -23,6 +23,44 @@ uint *vecni(uint start, uint count)
 	return v;
 }
 
+void createMeshGrid(float **u, float **v, uint *uSize, uint *vSize, uint m, uint n)
+{
+	unsigned int i,j;
+
+	*uSize = m*n*sizeof(float);
+	*vSize = m*n*sizeof(float);
+	*u = malloc(*uSize);
+	*v = malloc(*vSize);
+
+	for(i=0;i<m;i++)
+		for(j=0;j<n;j++)
+		{
+			(*u)[i*n+j]=(float)j/((float)n-1);
+			(*v)[j*m+i]=(float)j/((float)m-1);
+		}
+}
+
+void createMeshGridIndices(ushort **indices, uint *indicesLen, uint *indicesSize, uint m, uint n)
+{
+	uint i,j;
+
+	*indicesLen=3*2*(m-1)*(n-1);
+	*indicesSize = *indicesLen * sizeof(ushort);
+	*indices = malloc(*indicesSize);
+
+	for(i=0;i<m-1;i++)
+		for(j=0;j<n-1;j++)
+		{
+			(*indices)[6*(i*(n-1)+j)+0]=i*n+j;
+			(*indices)[6*(i*(n-1)+j)+1]=i*n+j+1;
+			(*indices)[6*(i*(n-1)+j)+2]=(i+1)*n+j;
+
+			(*indices)[6*(i*(n-1)+j)+3]=i*n+j+1;
+			(*indices)[6*(i*(n-1)+j)+4]=(i+1)*n+j;
+			(*indices)[6*(i*(n-1)+j)+5]=(i+1)*n+j+1;
+		}
+}
+
 ushort *vecns(uint start, uint count)
 {
 	uint i;
@@ -65,7 +103,7 @@ Matrix4 identity()
 
 pMatrix4 pIdentity()
 {
-	pMatrix4 I = malloc(4*4*sizeof(float));
+	pMatrix4 I = malloc(sizeof(Matrix4));
 	memset(I,0,sizeof(Matrix4));
 	I->m11 = 1.0f;
 	I->m22 = 1.0f;

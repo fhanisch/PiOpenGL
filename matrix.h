@@ -23,10 +23,13 @@ typedef struct
 float *vecnf(float start, float step, uint count);
 uint *vecni(uint start, uint count);
 ushort *vecns(uint start, uint count);
+void createMeshGrid(float **u, float **v, uint *uSize, uint *vSize, uint m, uint n);
+void createMeshGridIndices(ushort **indices, uint *indicesLen, uint *indicesSize, uint m, uint n);
 Vector3 vec3(float x, float y, float z);
 pVector3 pTmpVec3(float x, float y, float z);
 Vector4 getColor(float r, float g, float b, float a);
 Matrix4 identity();
+pMatrix4 pIdentity();
 Matrix4 scaleMatrix(Matrix4 M, Vector3 s);
 Matrix4 translateMatrix(Matrix4 M, Vector3 t);
 void translatePtrMatrix(pMatrix4 M, pVector3 t);

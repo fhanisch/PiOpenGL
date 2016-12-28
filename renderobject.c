@@ -13,16 +13,28 @@ void createVBO(GLenum bufferType, GLuint *bufferID, GLuint bufferSize, GLvoid *b
 	glBufferData(bufferType, bufferSize, buffer, GL_STATIC_DRAW);
 }
 
-void initObject(Object *obj, GLuint shaderProgram, char *fileName)
+void initObject(Object *obj, pMatrix4 mView, GLuint shaderProgram, char *fileName, ObjFlags flags)
 {
     obj->isVBO = GL_FALSE;
-    obj->isUBO = GL_FALSE;
+    obj->isU = GL_FALSE;
+    obj->isV = GL_FALSE;
     obj->isTCO = GL_FALSE;
     obj->isTex = GL_FALSE;
-    loadModel(obj,fileName);
+
+    if ((flags&FROM_FILE)==FROM_FILE)
+		loadModel(obj,fileName);
+	else if ((flags&MESH_GRID)==MESH_GRID)
+	{
+		printf("Meshgrid:\n");
+		createMeshGrid(&obj->u,&obj->v,&obj->uSize,&obj->vSize, 10, 10);
+		obj->isU = GL_TRUE;
+		obj->isV = GL_TRUE;
+		createMeshGridIndices(&obj->indices,&obj->indicesLen,&obj->indicesSize,10,10);
+	}
 
     obj->mProj = scaleMatrix(identity(),vec3((float)SCREEN_HEIGHT/(float)SCREEN_WIDTH,1.0f,1.0f));
-    obj->mView = identity();
+    obj->mView = mView;
+    obj->mModel = identity();
     obj->shaderProgram = shaderProgram;
 
     obj->mProjHandle = glGetUniformLocation(obj->shaderProgram,"mProj");
@@ -32,26 +44,32 @@ void initObject(Object *obj, GLuint shaderProgram, char *fileName)
     obj->samplerHandle = glGetUniformLocation(obj->shaderProgram,"samp");
 
 	///Wichtig: Möglichst keine identischen Buffer mehrfach generieren!
-    if (obj->isVBO)
-    {
-        obj->vertexHandle = glGetAttribLocation(obj->shaderProgram,"vertex");
-        createVBO(GL_ARRAY_BUFFER, &obj->vboID, obj->verticesSize, obj->vertices);
-        free(obj->vertices);
-    }
-    if (obj->isUBO)
-    {
-        obj->uHandle = glGetAttribLocation(obj->shaderProgram,"u");
-        createVBO(GL_ARRAY_BUFFER, &obj->uboID, obj->uSize, obj->u);
-        free(obj->u);
-    }
-    if (obj->isTCO)
-    {
+	if (obj->isVBO)
+	{
+		obj->vertexHandle = glGetAttribLocation(obj->shaderProgram,"vertex");
+		createVBO(GL_ARRAY_BUFFER, &obj->vboID, obj->verticesSize, obj->vertices);
+		free(obj->vertices);
+	}
+	if (obj->isU)
+	{
+		obj->uHandle = glGetAttribLocation(obj->shaderProgram,"u");
+		createVBO(GL_ARRAY_BUFFER, &obj->uID, obj->uSize, obj->u);
+		free(obj->u);
+	}
+	if (obj->isV)
+	{
+		obj->vHandle = glGetAttribLocation(obj->shaderProgram,"v");
+		createVBO(GL_ARRAY_BUFFER, &obj->vID, obj->vSize, obj->v);
+		free(obj->v);
+	}
+	if (obj->isTCO)
+	{
 		obj->texCoordsHandle = glGetAttribLocation(obj->shaderProgram,"texcoord");
 		createVBO(GL_ARRAY_BUFFER, &obj->tcoID, obj->texCoordsSize, obj->texCoords);
 		free(obj->texCoords);
-    }
-    createVBO(GL_ELEMENT_ARRAY_BUFFER, &obj->iboID, obj->indicesSize, obj->indices);
-    free(obj->indices);
+	}
+	createVBO(GL_ELEMENT_ARRAY_BUFFER, &obj->iboID, obj->indicesSize, obj->indices);
+	free(obj->indices);
 }
 
 void drawObject(Object *o)
@@ -59,7 +77,7 @@ void drawObject(Object *o)
 	glUseProgram(o->shaderProgram);
 
 	glUniformMatrix4fv(o->mProjHandle,1,GL_FALSE,(GLfloat*)pTmpTranspose(&o->mProj)); // Matrizen für Shader müssen transponiert werden
-	glUniformMatrix4fv(o->mViewHandle,1,GL_FALSE,(GLfloat*)pTmpTranspose(&o->mView)); // Matrizen für Shader müssen transponiert werden
+	glUniformMatrix4fv(o->mViewHandle,1,GL_FALSE,(GLfloat*)pTmpTranspose(o->mView)); // Matrizen für Shader müssen transponiert werden
 	glUniformMatrix4fv(o->mModelHandle,1,GL_FALSE,(GLfloat*)pTmpTranspose(&o->mModel)); // Matrizen für Shader müssen transponiert werden
 	glUniform4fv(o->colorHandle,1, (GLfloat*)&o->color);
 	if (o->samplerHandle>=0) glUniform1i(o->samplerHandle,0);
@@ -70,11 +88,17 @@ void drawObject(Object *o)
 		glEnableVertexAttribArray(o->vertexHandle);
 		glVertexAttribPointer(o->vertexHandle, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	}
-	if (o->isUBO)
+	if (o->isU)
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, o->uboID);
+		glBindBuffer(GL_ARRAY_BUFFER, o->uID);
 		glEnableVertexAttribArray(o->uHandle);
 		glVertexAttribPointer(o->uHandle, 1, GL_FLOAT, GL_FALSE, 0, 0);
+	}
+	if (o->isV)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, o->vID);
+		glEnableVertexAttribArray(o->vHandle);
+		glVertexAttribPointer(o->vHandle, 1, GL_FLOAT, GL_FALSE, 0, 0);
 	}
 	if (o->isTCO)
 	{
@@ -158,7 +182,7 @@ status loadModel(Object *o, char *fileName)
             o->u = vecnf(start, step, count);
             o->uLen = count;
             o->uSize = count*sizeof(GLfloat);
-            o->isUBO = GL_TRUE;
+            o->isU = GL_TRUE;
             o->indices = vecns(0,count);
             o->indicesLen = count;
             o->indicesSize = count * sizeof(GLushort);

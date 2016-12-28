@@ -1,6 +1,7 @@
 //vertex shader
 
 uniform mat4 mProj;
+uniform mat4 mView;
 uniform mat4 mModel;
 attribute float u;
 
@@ -11,5 +12,5 @@ void main()
 	x = cos(u*2.0*3.14159);
 	y = -sin(u*2.0*3.14159);
 
-	gl_Position = mProj * mModel * vec4(x, y, 0.0, 1.0);
+	gl_Position = mProj * mView * mModel * vec4(x, y, 0.0, 1.0);
 }

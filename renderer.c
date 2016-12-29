@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <libusb-1.0/libusb.h>
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
-#include <SDL2/SDL_ttf.h>
 #include <cblas.h>
 #include <lapacke.h>
 #include "types.h"
@@ -33,6 +33,8 @@ static Object triangle, rect, cross, circle, stern, background, boden, txtBlock,
 		cube, cube2, sphere;
 static pMatrix4 mView;
 
+static GLuint charOffset[128];
+
 void initOpenGL(CUBE_STATE_T *s, USB_DEV *dev)
 {
 	const GLubyte *vendor, *renderer, *oglVersion, *glslVersion;
@@ -58,8 +60,8 @@ void initOpenGL(CUBE_STATE_T *s, USB_DEV *dev)
 	else if (f2)
 	{
 		//Transparenz
-		//glEnable(GL_BLEND);
-		//glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LESS);
@@ -76,11 +78,8 @@ void initRenderScene()
 	GLuint generic_vs, generictex_vs, circle_vs, sphere_vs;
 	GLuint generic_fs, generictex_fs, generictext_fs, ads_per_frag_fs;
 	GLuint generic_sp, generictex_sp, generictext_sp, circle_sp, sphere_sp;
-	Texture tex, fliessen, text, rock;
-	TTF_Font *font;
-	SDL_Surface *message;
-	SDL_PixelFormat *format;
-	SDL_Color textColor = { 255, 255, 255 };
+	Texture tex, fliessen, text, rock, charmap;
+
 	mView = pIdentity();
 
 	//Create Shader
@@ -118,24 +117,35 @@ void initRenderScene()
 	free(vsSphereStr);
 	free(fsADSperFragStr);
 
-	//Font
-	font = TTF_OpenFont( "res/Ubuntu-B.ttf", 32 );
-	message = TTF_RenderText_Solid( font, TEXT_OUT, textColor );
-	printf("w: %i\n",message->w);
-	printf("h: %i\n",message->h);
-	format = message->format;
-	printf("BitsPerPixel: %i\n",format->BitsPerPixel);
-	printf("BytesPerPixel: %i\n",format->BytesPerPixel);
-
 	//Texture
-	initTexture(&tex, GL_TEXTURE0, GL_RGB, "res/green_scratches.bmp", NULL);
-	initTexture(&fliessen, GL_TEXTURE0, GL_RGB, "res/fliessen.bmp",NULL);
-	initTexture(&rock, GL_TEXTURE0, GL_RGB, "res/rock.bmp",NULL);
-	initTexture(&text, GL_TEXTURE0, GL_RGB, NULL, message);
+	initTexture(&tex, GL_TEXTURE0, GL_RGB, "res/green_scratches.bmp");
+	initTexture(&fliessen, GL_TEXTURE0, GL_RGB, "res/fliessen.bmp");
+	initTexture(&rock, GL_TEXTURE0, GL_RGB, "res/rock.bmp");
+	initTexture(&text, GL_TEXTURE0, GL_RGB, "res/font3.bmp");
+	initTexture(&charmap, GL_TEXTURE0, GL_RGB, "res/font.bin");
 	printf("Texuture xSize = %u\n",tex.xSize);
 	printf("Texuture ySize = %u\n",tex.ySize);
 	printf("Texture ID = %d\n", tex.id);
 	printf("Texture Index = %d\n", tex.textureIndex);
+
+	//Text Block
+	initObject(&txtBlock, pIdentity(), generictext_sp, "res/free_mono.geo", FROM_FILE);
+	txtBlock.renderMode = GL_TRIANGLE_STRIP;
+	txtBlock.texID = text.id;
+	txtBlock.isTex = GL_TRUE;
+	//txtBlock.mModel = scaleMatrix(txtBlock.mModel,vec3(0.2,0.08,1.0));
+	txtBlock.mModel = scaleMatrix(txtBlock.mModel,vec3(0.08,0.03,1.0));
+	charOffset['1'] = 3*4*2*4;
+	charOffset['2'] = 4*4*2*4;
+	charOffset['3'] = 5*4*2*4;
+	charOffset['4'] = 6*4*2*4;
+	charOffset['5'] = 7*4*2*4;
+	charOffset['6'] = 8*4*2*4;
+	charOffset['7'] = 9*4*2*4;
+	charOffset['8'] = 10*4*2*4;
+	charOffset['9'] = 11*4*2*4;
+	charOffset['0'] = 12*4*2*4;
+	charOffset['.'] = 13*4*2*4;
 
 	if (f1)
 	{
@@ -188,14 +198,6 @@ void initRenderScene()
 		boden.texID = fliessen.id;
 		boden.mProj = rect.mProj;
 		boden.mModel = scaleMatrix(identity(),vec3(0.4,0.4,1.0));
-
-		//Text Block
-		initObject(&txtBlock, mView, generictext_sp, "res/rectangle.geo", FROM_FILE);
-		txtBlock.renderMode = GL_TRIANGLE_STRIP;
-		txtBlock.texID = text.id;
-		txtBlock.isTex = GL_TRUE;
-		txtBlock.mModel = scaleMatrix(identity(),vec3(0.5,0.05,1.0));
-		txtBlock.mModel = translateMatrix(txtBlock.mModel,vec3(-0.4,0.8,0.0));
 	}
 	else if (f2)
 	{
@@ -224,6 +226,24 @@ void initRenderScene()
 	}
 }
 
+void renderText(Object *o, char *text, GLfloat xPos, GLfloat yPos)
+{
+	uint i;
+	float bc[4]={0.3,0.5,0.3,0.5};
+
+	o->mModel.m14 = -xPos;
+	o->mModel.m24 = yPos;
+	o->mModel.m34 = -1.0;
+
+	for (i=0;i<strlen(text);i++)
+	{
+		o->vertexBufferOffset = i*4*3*4;
+		o->texCoordBufferOffset = charOffset[(uint)text[i]];
+		o->color = getColor(bc[i],bc[i],bc[i],1.0);
+		drawObject(o);
+	}
+}
+
 void renderLoop()
 {
 	status ret;
@@ -231,13 +251,19 @@ void renderLoop()
 	unsigned char keybuf[8];
 	unsigned char gamectrlbuf[8];
 	int transferred;
-	//uint i,j;
+	uint i,j;
 	Matrix4 M, mModelView;
 	int ipiv[4];
+	uint frameCount=0;
+	clock_t start_t, end_t, delta_t;
+	char strFPS[4];
+	char strPos[4];
 
 	memset(keybuf, 0, sizeof(keybuf));
 	memset(gamectrlbuf, 128, sizeof(gamectrlbuf));
 
+	sprintf(strFPS,"%u",0);
+	start_t = clock(); //FPS
 	while(!quit)
 	{
 		if (f1)
@@ -251,7 +277,7 @@ void renderLoop()
 			drawObject(&circle);
 			drawObject(&stern);
 			drawObject(&cross);
-			drawObject(&txtBlock);
+			renderText(&txtBlock,"1231",1.5,0.9);
 
 			eglSwapBuffers(state->display, state->surface);
 
@@ -295,18 +321,30 @@ void renderLoop()
 			drawObject(&sphere);
 			drawObject(&cube2);
 
-			/*
 			for (i=0;i<10;i++)
 			{
 				for (j=0;j<10;j++)
 				{
-					setPtrPosition(&cube.mModel,pTmpVec3((float)i*5.0,0.0,-(float)j*5.0));
+					setPtrPosition(&cube.mModel,pTmpVec3((float)i*5.0+5.0,0.0,-(float)j*5.0));
 					drawObject(&cube);
 				}
 			}
-			*/
+
+			sprintf(strPos,"%1.1f",mView->m34);
+			renderText(&txtBlock,strPos,1.5,0.8);
+			renderText(&txtBlock,strFPS,1.5,0.9);
 
 			eglSwapBuffers(state->display, state->surface);
+
+			frameCount++;
+			end_t = clock();
+			delta_t = (double)(end_t - start_t) / CLOCKS_PER_SEC;
+			if (delta_t>1.0)
+			{
+				sprintf(strFPS,"%u",frameCount);
+				start_t = clock();
+				frameCount = 0;
+			}
 
 			ret = libusb_bulk_transfer(usb_dev->hid_keyboard,ENDPOINT_ADDRESS,keybuf,5,&transferred,1);
 			if (ret==0 || ret==-7)

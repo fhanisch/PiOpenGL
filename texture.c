@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <GLES2/gl2.h>
-#include <SDL/SDL_ttf.h>
 #include "texture.h"
 
 void display_buffer_hex(unsigned char *buffer, unsigned size)
@@ -34,17 +34,6 @@ void display_buffer_hex(unsigned char *buffer, unsigned size)
 	printf("\n\n" );
 }
 
-void setPixel(GLubyte *tex, int xSize, int x, int y)
-{
-	GLubyte value = 255;
-	uint pixelPtr;
-
-	pixelPtr = (y*xSize+x)*3;
-	tex[pixelPtr] = value;
-	tex[pixelPtr+1] = value;
-	tex[pixelPtr+2] = value;
-}
-
 void convertTexture(GLubyte *texture, void *pixels, uint xSize, uint ySize)
 {
 	uint i, j, k, ptr=0;
@@ -66,7 +55,18 @@ void convertTexture(GLubyte *texture, void *pixels, uint xSize, uint ySize)
 	}
 }
 
-void testCharMap(GLubyte *tex, int xSize)
+void setPixel(GLubyte *tex, int xSize, int x, int y)
+{
+	GLubyte value = 255;
+	uint pixelPtr;
+
+	pixelPtr = (y*xSize+x)*3;
+	tex[pixelPtr] = value;
+	tex[pixelPtr+1] = value;
+	tex[pixelPtr+2] = value;
+}
+
+void loadCharMap(GLubyte *tex, int xSize)
 {
 	FILE *file;
 	GLubyte charMap[128*16];
@@ -78,40 +78,44 @@ void testCharMap(GLubyte *tex, int xSize)
 	printf("Size Of CharMap: %i\n",sizeof(charMap));
 	fread(charMap,sizeof(charMap),1,file);
 	fclose(file);
-
-	for (character=0;character<128;character++)
+	printf("Font geladen\n");
+	for (character=0;character<20;character++)
 	{
 		for (zeile=0;zeile<16;zeile++)
 		{
 			for (bit=0;bit<8;bit++)
 			{
-				if (charMap[charPtr]>>bit & test)
+				if (charMap[charPtr+48*16]>>bit & test)
 				{
-					setPixel(tex,xSize,200+bit+character*8,200-zeile);
+					setPixel(tex,xSize,bit+character*8,15-zeile);
 				}
 			}
 			charPtr++;
 		}
+		printf("charPtr %d\n",charPtr);
 	}
 }
 
-void initTexture(Texture *tex, GLenum texindex, GLenum format, char *fileName, SDL_Surface *font)
+void initTexture(Texture *tex, GLenum texindex, GLenum format, char *fileName)
 {
 	tex->textureIndex = texindex;
 	tex->pixelFormat = format;
-	if (font)
+
+	if (!strcmp(fileName,"res/font.bin"))
 	{
-		tex->xSize = font->w+font->w%4;
-		tex->ySize = font->h;
-        tex->texture = malloc(tex->xSize*tex->ySize*3);
-        memset(tex->texture, 0, tex->xSize*tex->ySize*3);
-		convertTexture(tex->texture,font->pixels, tex->xSize,tex->ySize);
+		printf("Test font\n");
+		tex->xSize = 128 * 8;
+		tex->ySize = 16;
+		tex->texture = malloc(tex->xSize*tex->ySize*3);
+		memset(tex->texture, 0, tex->xSize*tex->ySize*3);
+		loadCharMap(tex->texture,tex->xSize);
 	}
 	else
 	{
 		tex->fileName = fileName;
 		loadTexture(tex);
 	}
+
 	glActiveTexture(tex->textureIndex);
 	genTexture(tex);
 }

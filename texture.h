@@ -11,7 +11,7 @@ typedef struct
 	GLenum pixelFormat;
 } Texture;
 
-void initTexture(Texture *tex, GLenum texindex, GLenum format, char *fileName, SDL_Surface *font);
+void initTexture(Texture *tex, GLenum texindex, GLenum format, char *fileName);
 int loadTexture(Texture *tex);
 void genTexture(Texture *tex);
 

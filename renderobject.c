@@ -31,6 +31,9 @@ void initObject(Object *obj, pMatrix4 mView, GLuint shaderProgram, char *fileNam
 		createMeshGridIndices(&obj->indices,&obj->indicesLen,&obj->indicesSize,50,50);
 	}
 
+	obj->vertexBufferOffset = 0;
+	obj->texCoordBufferOffset = 0;
+
     obj->mProj = scaleMatrix(identity(),vec3((float)SCREEN_HEIGHT/(float)SCREEN_WIDTH,1.0f,1.0f));
     obj->mView = mView;
     obj->mModel = identity();
@@ -87,7 +90,7 @@ void drawObject(Object *o)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, o->vboID);
 		glEnableVertexAttribArray(o->vertexHandle);
-		glVertexAttribPointer(o->vertexHandle, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		glVertexAttribPointer(o->vertexHandle, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)o->vertexBufferOffset);
 	}
 	if (o->isU)
 	{
@@ -105,7 +108,7 @@ void drawObject(Object *o)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, o->tcoID);
 		glEnableVertexAttribArray(o->texCoordsHandle);
-		glVertexAttribPointer(o->texCoordsHandle, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		glVertexAttribPointer(o->texCoordsHandle, 2, GL_FLOAT, GL_FALSE, 0, (GLvoid*)o->texCoordBufferOffset);
 	}
 	if (o->isTex)
     {

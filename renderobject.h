@@ -24,6 +24,8 @@ typedef struct
 	Vector4 color;
 	GLenum renderMode;
 	GLenum textureIndex;
+	GLuint vertexBufferOffset;
+	GLuint texCoordBufferOffset;
 } Object;
 
 void createVBO(GLenum bufferType, GLuint *bufferID, GLuint bufferSize, GLvoid *buffer);

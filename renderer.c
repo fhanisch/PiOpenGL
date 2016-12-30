@@ -51,21 +51,14 @@ void initOpenGL(CUBE_STATE_T *s, USB_DEV *dev)
 	printf("OpenGL Version: %s\n",oglVersion);
 	printf("GLSL Version: %s\n",glslVersion);
 
-	if (f1)
-	{
-		//Transparenz
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-	}
-	else if (f2)
-	{
-		//Transparenz
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+	//Transparenz
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
+	if (f2)
+	{
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LESS);
-
 		glClearDepthf(1.0f);
 	}
 
@@ -251,13 +244,13 @@ void renderLoop()
 	unsigned char keybuf[8];
 	unsigned char gamectrlbuf[8];
 	int transferred;
-	uint i,j;
+	//uint i,j;
 	Matrix4 M, mModelView;
 	int ipiv[4];
 	uint frameCount=0;
 	clock_t start_t, end_t, delta_t;
 	char strFPS[4];
-	char strPos[4];
+	char strPos[32];
 
 	memset(keybuf, 0, sizeof(keybuf));
 	memset(gamectrlbuf, 128, sizeof(gamectrlbuf));
@@ -320,7 +313,7 @@ void renderLoop()
 			//drawObject(&cube);
 			drawObject(&sphere);
 			drawObject(&cube2);
-
+/*
 			for (i=0;i<10;i++)
 			{
 				for (j=0;j<10;j++)
@@ -329,9 +322,9 @@ void renderLoop()
 					drawObject(&cube);
 				}
 			}
-
+*/
 			sprintf(strPos,"%1.1f",mView->m34);
-			renderText(&txtBlock,strPos,1.5,0.8);
+			//renderText(&txtBlock,strPos,1.5,0.8);
 			renderText(&txtBlock,strFPS,1.5,0.9);
 
 			eglSwapBuffers(state->display, state->surface);

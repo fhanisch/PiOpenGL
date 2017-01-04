@@ -269,6 +269,7 @@ void renderLoop()
 	clock_t start_t, end_t, delta_t;
 	char strFPS[4];
 	char strPos[32];
+	Vector3 rotAxis;
 
 	memset(keybuf, 0, sizeof(keybuf));
 	memset(gamectrlbuf, 128, sizeof(gamectrlbuf));
@@ -384,11 +385,17 @@ void renderLoop()
 				translatePtrMatrix(mView, pTmpVec3(0.0, 0.0, -((GLfloat)gamectrlbuf[1]/256.0-0.5)));
 				translatePtrMatrix(mView, pTmpVec3(-((GLfloat)gamectrlbuf[0]/256.0-0.5), 0.0, 0.0));
 				*mView = multPtrMatrix(pTmpGetRotX(-((GLfloat)gamectrlbuf[3]/256.0-0.5)), mView);
-				*mView = multPtrMatrix(pTmpGetRotX(((GLfloat)gamectrlbuf[2]/256.0-0.5)*mView->m12), mView);
+
 				*cube2.mView = multPtrMatrix(pTmpGetRotY((GLfloat)gamectrlbuf[2]/256.0-0.5), cube2.mView);
+
+                rotAxis.x = mView->m12;
+                rotAxis.y = mView->m22;
+                rotAxis.z = mView->m32;
+				*mView = multPtrMatrix(pTmpGetRotX(((GLfloat)gamectrlbuf[2]/256.0-0.5)*rotAxis.x), mView);
+				//CBLAS-Test
 				M=*mView;
-				cblas_sgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,4,4,4,1.0,(float*)pTmpGetRotY(((GLfloat)gamectrlbuf[2]/256.0-0.5)*mView->m22),4,(float*)&M,4,0.0,(float*)mView,4);
-				*mView = multPtrMatrix(pTmpGetRotZ(((GLfloat)gamectrlbuf[2]/256.0-0.5)*mView->m32), mView);
+				cblas_sgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,4,4,4,1.0,(float*)pTmpGetRotY(((GLfloat)gamectrlbuf[2]/256.0-0.5)*rotAxis.y),4,(float*)&M,4,0.0,(float*)mView,4);
+				*mView = multPtrMatrix(pTmpGetRotZ(((GLfloat)gamectrlbuf[2]/256.0-0.5)*rotAxis.z), mView);
 			}
 			else
 			{

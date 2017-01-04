@@ -25,12 +25,19 @@
 
 #define TEXT_OUT "Das ist das Haus vom Nikolaus !!!"
 
+typedef struct
+{
+	float x,y,z;
+	float theta, phi, psi;
+} Camera;
+
+
 static CUBE_STATE_T *state = NULL;
 static USB_DEV *usb_dev;
 static bool f1 = FALSE;
 static bool f2 = TRUE;
 static Object triangle, rect, cross, circle, stern, background, boden, txtBlock,
-		cube, cube2, sphere;
+		cube, cube2, sphere, plane;
 static pMatrix4 mView;
 
 static GLuint charOffset[128];
@@ -113,8 +120,8 @@ void initRenderScene()
 	//Texture
 	initTexture(&tex, GL_TEXTURE0, GL_RGB, "res/green_scratches.bmp");
 	initTexture(&fliessen, GL_TEXTURE0, GL_RGB, "res/fliessen.bmp");
-	initTexture(&rock, GL_TEXTURE0, GL_RGB, "res/rock.bmp");
-	initTexture(&text, GL_TEXTURE0, GL_RGB, "res/font3.bmp");
+	initTexture(&rock, GL_TEXTURE0, GL_RGB, "res/universum.bmp");
+	initTexture(&text, GL_TEXTURE0, GL_RGB, "res/font3_new.bmp");
 	initTexture(&charmap, GL_TEXTURE0, GL_RGB, "res/font.bin");
 	printf("Texuture xSize = %u\n",tex.xSize);
 	printf("Texuture ySize = %u\n",tex.ySize);
@@ -122,7 +129,7 @@ void initRenderScene()
 	printf("Texture Index = %d\n", tex.textureIndex);
 
 	//Text Block
-	initObject(&txtBlock, pIdentity(), generictext_sp, "res/free_mono.geo", FROM_FILE);
+	initObject(&txtBlock, pIdentity(), generictext_sp, "res/txtblock2.geo", FROM_FILE);
 	txtBlock.renderMode = GL_TRIANGLE_STRIP;
 	txtBlock.texID = text.id;
 	txtBlock.isTex = GL_TRUE;
@@ -139,7 +146,8 @@ void initRenderScene()
 	charOffset['9'] = 11*4*2*4;
 	charOffset['0'] = 12*4*2*4;
 	charOffset['.'] = 13*4*2*4;
-
+	charOffset['-'] = 14*4*2*4;
+	charOffset[' '] = 15*4*2*4;
 	if (f1)
 	{
 		//Triangle
@@ -206,23 +214,33 @@ void initRenderScene()
 		//cube2
 		cube2 = cube;
 		cube2.texID = rock.id;
-		cube2.mModel = scaleMatrix(identity(),vec3(100000.0,100000.0,100000.0));
 		cube2.mProj = getFrustum(0.25*(GLfloat)SCREEN_WIDTH/(GLfloat)SCREEN_HEIGHT,0.25,0.5,200000.0);
+		cube2.mView = pIdentity();
+		cube2.mModel = scaleMatrix(identity(),vec3(100000.0,100000.0,100000.0));
 
 		//Sphere
 		initObject(&sphere, mView, sphere_sp, NULL, MESH_GRID | OBJ_3D);
 		sphere.renderMode = GL_TRIANGLES;
 		sphere.mProj = getFrustum(0.25*(GLfloat)SCREEN_WIDTH/(GLfloat)SCREEN_HEIGHT,0.25,0.5,50.0);
-		sphere.mModel = translateMatrix(identity(), vec3(0.0,0.0,-5.0));
+		//sphere.mModel = translateMatrix(identity(), vec3(0.0,0.0,-5.0));
 		sphere.mTransInvModelView = identity();
 		sphere.color = getColor(0.0,1.0,0.0,1.0);
+
+		//Rectangle
+		initObject(&plane, mView, generic_sp, "res/rectangle.geo", FROM_FILE);
+		plane.renderMode = GL_TRIANGLE_STRIP;
+		plane.mProj = getFrustum(0.25*(GLfloat)SCREEN_WIDTH/(GLfloat)SCREEN_HEIGHT,0.25,0.5,50.0);
+		plane.color = getColor(1.0f,1.0f,0.0f,1.0f);
+		plane.mModel = scaleMatrix(plane.mModel,vec3(10.0,10.0,1.0));
+		plane.mModel = multMatrix(getRotX(3.14159/2.0),plane.mModel);
+		plane.isTCO = GL_FALSE;
 	}
 }
 
 void renderText(Object *o, char *text, GLfloat xPos, GLfloat yPos)
 {
 	uint i;
-	float bc[4]={0.3,0.5,0.3,0.5};
+	//float bc[6]={0.3,0.5,0.3,0.5,0.3,0.5};
 
 	o->mModel.m14 = -xPos;
 	o->mModel.m24 = yPos;
@@ -232,7 +250,7 @@ void renderText(Object *o, char *text, GLfloat xPos, GLfloat yPos)
 	{
 		o->vertexBufferOffset = i*4*3*4;
 		o->texCoordBufferOffset = charOffset[(uint)text[i]];
-		o->color = getColor(bc[i],bc[i],bc[i],1.0);
+		//o->color = getColor(bc[i],bc[i],bc[i],1.0);
 		drawObject(o);
 	}
 }
@@ -313,6 +331,7 @@ void renderLoop()
 			//drawObject(&cube);
 			drawObject(&sphere);
 			drawObject(&cube2);
+			drawObject(&plane);
 /*
 			for (i=0;i<10;i++)
 			{
@@ -323,8 +342,8 @@ void renderLoop()
 				}
 			}
 */
-			sprintf(strPos,"%1.1f",mView->m34);
-			//renderText(&txtBlock,strPos,1.5,0.8);
+			sprintf(strPos,"%1.1f",-mView->m14*mView->m31 - mView->m24*mView->m32 + mView->m34*mView->m33);
+			renderText(&txtBlock,strPos,1.5,0.8);
 			renderText(&txtBlock,strFPS,1.5,0.9);
 
 			eglSwapBuffers(state->display, state->surface);
@@ -350,6 +369,8 @@ void renderLoop()
 				if (keybuf[2]==0x1d || keybuf[3]==0x1d) translatePtrMatrix(mView,pTmpVec3(0.0,-0.05,0.0));
 				if (keybuf[2]==0x4f || keybuf[3]==0x4f) *mView = multPtrMatrix(pTmpGetRotY(0.05),mView);
 				if (keybuf[2]==0x50 || keybuf[3]==0x50) *mView = multPtrMatrix(pTmpGetRotY(-0.05),mView);
+				if (keybuf[2]==0x51 || keybuf[3]==0x51) *mView = multPtrMatrix(pTmpGetRotX(0.05),mView);
+				if (keybuf[2]==0x52 || keybuf[3]==0x52) *mView = multPtrMatrix(pTmpGetRotX(-0.05),mView);
 				if (keybuf[2]==0x29) quit=TRUE;
 			}
 			else
@@ -362,9 +383,12 @@ void renderLoop()
 			{
 				translatePtrMatrix(mView, pTmpVec3(0.0, 0.0, -((GLfloat)gamectrlbuf[1]/256.0-0.5)));
 				translatePtrMatrix(mView, pTmpVec3(-((GLfloat)gamectrlbuf[0]/256.0-0.5), 0.0, 0.0));
-				//*mView = multPtrMatrix(pTmpGetRotY((GLfloat)gamectrlbuf[2]/256.0-0.5), mView);
+				*mView = multPtrMatrix(pTmpGetRotX(-((GLfloat)gamectrlbuf[3]/256.0-0.5)), mView);
+				*mView = multPtrMatrix(pTmpGetRotX(((GLfloat)gamectrlbuf[2]/256.0-0.5)*mView->m12), mView);
+				*cube2.mView = multPtrMatrix(pTmpGetRotY((GLfloat)gamectrlbuf[2]/256.0-0.5), cube2.mView);
 				M=*mView;
-				cblas_sgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,4,4,4,1.0,(float*)pTmpGetRotY((GLfloat)gamectrlbuf[2]/256.0-0.5),4,(float*)&M,4,0.0,(float*)mView,4);
+				cblas_sgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,4,4,4,1.0,(float*)pTmpGetRotY(((GLfloat)gamectrlbuf[2]/256.0-0.5)*mView->m22),4,(float*)&M,4,0.0,(float*)mView,4);
+				*mView = multPtrMatrix(pTmpGetRotZ(((GLfloat)gamectrlbuf[2]/256.0-0.5)*mView->m32), mView);
 			}
 			else
 			{

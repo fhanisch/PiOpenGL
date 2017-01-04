@@ -36,6 +36,8 @@ Matrix4 translateMatrix(Matrix4 M, Vector3 t);
 void translatePtrMatrix(pMatrix4 M, pVector3 t);
 void setPtrPosition(pMatrix4 M, pVector3 t);
 Matrix4 transpose(Matrix4 M);
+Matrix4 getRotX(float phi);
+pMatrix4 pTmpGetRotX(float phi);
 Matrix4 getRotY(float phi);
 pMatrix4 pTmpGetRotY(float phi);
 Matrix4 getRotZ(float phi);

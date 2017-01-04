@@ -6,6 +6,6 @@ varying vec2 texCoordOut;
 
 void main()
 {
-	vec4 tex = texture2D(samp, texCoordOut);
+	vec4 tex = texture2D(samp, 2.5*texCoordOut);
 	gl_FragColor = vec4(tex.rgb, 1.0);
 }

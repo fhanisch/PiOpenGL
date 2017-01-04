@@ -151,6 +151,23 @@ void setPtrPosition(pMatrix4 M, pVector3 t)
 	M->m34=t->z;
 }
 
+Matrix4 getRotX(float phi)
+{
+	Matrix4 X=identity();
+	X.m22 = cos(phi);	X.m23 =-sin(phi);
+	X.m32 = sin(phi);	X.m33 = cos(phi);
+	return X;
+}
+
+pMatrix4 pTmpGetRotX(float phi)
+{
+	static Matrix4 X;
+	setIdentity(&X);
+	X.m22 = cos(phi);	X.m23 =-sin(phi);
+	X.m32 = sin(phi);	X.m33 = cos(phi);
+	return &X;
+}
+
 Matrix4 getRotY(float phi)
 {
 	Matrix4 Y=identity();
@@ -162,7 +179,7 @@ Matrix4 getRotY(float phi)
 pMatrix4 pTmpGetRotY(float phi)
 {
 	static Matrix4 Y;
-	Y=identity();
+	setIdentity(&Y);
 	Y.m11 = cos(phi);	Y.m13 = sin(phi);
 	Y.m31 = -sin(phi);	Y.m33 = cos(phi);
 	return &Y;
@@ -171,17 +188,17 @@ pMatrix4 pTmpGetRotY(float phi)
 Matrix4 getRotZ(float phi)
 {
 	Matrix4 Z=identity();
-	Z.m11 = cos(phi);	Z.m12 = sin(phi);
-	Z.m21 = -sin(phi);	Z.m22 = cos(phi);
+	Z.m11 = cos(phi);	Z.m12 =-sin(phi);
+	Z.m21 = sin(phi);	Z.m22 = cos(phi);
 	return Z;
 }
 
 pMatrix4 pTmpGetRotZ(float phi)
 {
 	static Matrix4 Z;
-	Z = identity();
-	Z.m11 = cos(phi);	Z.m12 = sin(phi);
-	Z.m21 = -sin(phi);	Z.m22 = cos(phi);
+	setIdentity(&Z);
+	Z.m11 = cos(phi);	Z.m12 =-sin(phi);
+	Z.m21 = sin(phi);	Z.m22 = cos(phi);
 	return &Z;
 }
 
